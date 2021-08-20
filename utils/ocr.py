@@ -25,9 +25,7 @@ def textFromImage(image):
         # Perform text extraction
         text = pytesseract.image_to_string(
             invert, lang='eng', config='--psm 6')
-        if text == '♀':
-            text = ''
-        return text
+        return text.replace('♀', '').replace('\n\x0c', '').strip()
     except Exception as e:
         return ''
 

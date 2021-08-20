@@ -1,8 +1,10 @@
 import cv2
+import math
+import numpy as np
 from mss import mss
 from PIL import Image
-import numpy as np
-import time
+
+import utils.logic as logic
 
 
 class Vision:
@@ -10,7 +12,9 @@ class Vision:
         self.static_templates = {
             'gui-party-top': 'assets/party/guiTop.png',
             'own-name': 'assets/ownName.png',
-            'party-member-name': 'assets/party/memberName.png'
+            'party-member-name': 'assets/party/memberName.png',
+            'party-name-left-light': 'assets/party/playerNameLeft-light.png',
+            'party-name-left-dark': 'assets/party/playerNameLeft-dark.png'
         }
 
         self.templates = {k: cv2.imread(v, 0) for (
@@ -60,8 +64,47 @@ class Vision:
         except Exception as e:
             return []
 
-    def refresh_frame(self, monitor=None):
-        self.frame = self.take_screenshot(monitor)
+    def refresh_frame(self, monitor=None, blackAndWhite=True):
+        self.frame = self.take_screenshot(monitor, blackAndWhite=True)
+
+    def notInList(self, detectedObjects, newObject):
+        for detectedObject in detectedObjects:
+            if math.hypot(newObject[0]-detectedObject[0], newObject[1]-detectedObject[1]) < 30:
+                return False
+        return True
+
+    def find_template_matches(self, name, monitor={'top': 0, 'left': 0, 'width': 1920, 'height': 1080}, threshold=0.85):
+        sct_img = None
+        if monitor == None:
+            sct_img = self.screen.grab(self.monitor)
+        else:
+            sct_img = self.screen.grab(monitor)
+        img = Image.frombytes('RGB', sct_img.size, sct_img.rgb)
+        img = np.array(img)
+        img = self.convert_rgb_to_bgr(img)
+        img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        template = self.templates[name]
+        res = cv2.matchTemplate(img_gray, template, cv2.TM_CCOEFF_NORMED)
+        loc = np.where(res >= threshold)
+        detectedObjects = []
+
+        try:
+            for pt in zip(*loc[::-1]):
+                try:
+                    if len(detectedObjects) == 0 or self.notInList(pt):
+                        detectedObjects.append(pt)
+                except:
+                    continue
+        except:
+            return detectedObjects
+
+        return detectedObjects
+
+    def to_gray(self, image=None):
+        if image == None:
+            return []
+
+        return cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
     def match_image(self, img_grayscale, image, threshold=0.9):
         """

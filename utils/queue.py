@@ -54,6 +54,8 @@ class ConsumerThread(threading.Thread):
             logic.useStaminaPotion(self.bot)
         elif name == 'updatePartyMemberData':
             logic.updatePartyMemberData(self.bot)
+        elif name == 'updatePartyMemberHealths':
+            logic.updatePartyMemberHealths(self.bot)
         elif name == 'getPartyMemberToHeal':
             logic.getPartyMemberToHeal(self.bot)
         elif name == 'checkRunes':

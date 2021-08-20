@@ -38,6 +38,7 @@ class BotThread(threading.Thread):
         self.last_poison_disease = 0
         self.last_party_count = 0
         self.party_member_data = []
+        self.party_members_on_screen = []
 
         keyboard.add_hotkey('pause', self.toggle_pause)
 
@@ -68,7 +69,8 @@ class BotThread(threading.Thread):
     def checkOwnHealth(self):
         healthPercentage = logic.getMissingHealthPercentage(
             self.memory)
-        self.log(f'Health: {healthPercentage}%')
+        if healthPercentage < 100:
+            self.log(f'Health: {healthPercentage}%')
 
         if healthPercentage < 98:
             newPoisonDisease = self.memory.GetPoisonDisease()
@@ -87,7 +89,8 @@ class BotThread(threading.Thread):
 
     def checkOwnStamina(self):
         ownStamina = self.memory.GetStamina()
-        self.log(f'Stamina: {ownStamina}')
+        if ownStamina < 100:
+            self.log(f'Stamina: {ownStamina}')
 
         if ownStamina < 40:
             self.queue.add('useStaminaPotion')
@@ -100,6 +103,7 @@ class BotThread(threading.Thread):
             self.last_party_count = partyCount
             time.sleep(0.250)
             self.queue.add('updatePartyMemberData')
+        self.queue.add('updatePartyMemberHealths')
         self.queue.add('getPartyMemberToHeal')
 
     def checkTotemsAndFood(self):
