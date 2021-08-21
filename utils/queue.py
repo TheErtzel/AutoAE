@@ -62,5 +62,4 @@ class ConsumerThread(threading.Thread):
             logic.checkRunes(self.bot)
         else:
             self.bot.log(f'[Consumer] Unknown item: {name}')
-        time.sleep(0.250)
         self.processing = False

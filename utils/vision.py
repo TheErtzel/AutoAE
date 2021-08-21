@@ -12,9 +12,14 @@ class Vision:
         self.static_templates = {
             'gui-party-top': 'assets/party/guiTop.png',
             'own-name': 'assets/ownName.png',
+            'own-name-alt': 'assets/ownName-alt.png',
             'party-member-name': 'assets/party/memberName.png',
-            'party-name-left-light': 'assets/party/playerNameLeft-light.png',
-            'party-name-left-dark': 'assets/party/playerNameLeft-dark.png'
+            'guild-tag-left1': 'assets/party/tags/guild-left1.png',
+            'guild-tag-left2': 'assets/party/tags/guild-left2.png',
+            'guild-tag-left3': 'assets/party/tags/guild-left3.png',
+            'guild-tag-left4': 'assets/party/tags/guild-left4.png',
+            'guild-tag-left5': 'assets/party/tags/guild-left5.png',
+            'guild-tag-left6': 'assets/party/tags/guild-left6.png'
         }
 
         self.templates = {k: cv2.imread(v, 0) for (

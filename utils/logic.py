@@ -88,6 +88,12 @@ def clickSelf(bot):
 
     if np.shape(matches)[1] >= 1:
         clickLocation(bot, matches[1][0], matches[0][0], offset=[45, 125])
+    else:
+        matches = bot.vision.scaled_find_template(
+            'own-name-alt', threshold=0.6)
+
+        if np.shape(matches)[1] >= 1:
+            clickLocation(bot, matches[1][0], matches[0][0], offset=[45, 125])
 
     bot.vision.refresh_frame()
 
@@ -98,6 +104,11 @@ def foundSelf(bot):
     matches = bot.vision.scaled_find_template(
         'own-name', threshold=0.6)
     canSeeObject = np.shape(matches)[1] >= 1
+
+    if not canSeeObject:
+        matches = bot.vision.scaled_find_template(
+            'own-name-alt', threshold=0.6)
+        canSeeObject = np.shape(matches)[1] >= 1
 
     bot.vision.refresh_frame()
     return canSeeObject
@@ -125,36 +136,42 @@ def foundImage(bot, image, scales=[1.0, 0.9, 1.1]):
 def findPartyMembersOnScreen(bot):
     bot.vision.refresh_frame(bot.consts.game_region)
     partyMembersOnScreen = []
-    matches = bot.vision.find_template_matches(
-        'party-name-left-light', monitor=bot.consts.game_region, threshold=0.6)
+    matches = list([])
 
-    if len(matches) == 0:
-        matches = bot.vision.find_template_matches(
-            'party-name-left-dark', monitor=bot.consts.game_region, threshold=0.6)
+    guild_tag_templates = ['guild-tag-left1',
+                           'guild-tag-left2', 'guild-tag-left3', 'guild-tag-left4', 'guild-tag-left5', 'guild-tag-left6']
+    for template in guild_tag_templates:
+        template_matches = bot.vision.find_template_matches(
+            template, monitor=bot.consts.game_region, threshold=0.6)
+        matches.extend(x for x in template_matches if x not in matches)
 
-    for match in matches:
-        top = match[1] + 71
-        left = match[0] + 28
-        memberImage = bot.vision.take_screenshot(
-            monitor={'top': top, 'left': left, 'width': 120, 'height': 20}, blackAndWhite=False, crop=False, scale=5.0)
-        memberName = bot.ocr.textFromImage(memberImage)
-        for partyMember in bot.party_member_data:
-            partyName = partyMember['name']
-            shared, percentage = compare_strings(partyName, memberName)
+    if len(matches) > 0:
+        for match in matches:
+            top = match[1] + 71
+            left = match[0] + 28
+            memberImage = bot.vision.take_screenshot(
+                monitor={'top': top, 'left': left, 'width': 120, 'height': 20}, blackAndWhite=False, crop=False, scale=5.0)
+            memberName = bot.ocr.textFromImage(memberImage)
+            if memberName == '':
+                continue
 
-            if percentage > 70:
-                bot.log(
-                    f'[Logic] (findPartyMembersOnScreen) Party Name: {partyName} [{len(partyName)}]')
-                bot.log(
-                    f'[Logic] (findPartyMembersOnScreen) On-screen Name: {memberName} [{len(memberName)}]')
-                bot.log(
-                    f'[Logic] (findPartyMembersOnScreen) Shared characters: {shared}')
-                bot.log(
-                    f'[Logic] (findPartyMembersOnScreen) Similarity {percentage} %')
+            for partyMember in bot.party_member_data:
+                partyName = partyMember['name']
+                shared, percentage = compare_strings(partyName, memberName)
 
-                partyMember['game_window'] = {'x': left,
-                                              'y': top, 'image': memberImage}
-                partyMembersOnScreen.append(partyMember)
+                if percentage > 70:
+                    bot.log(
+                        f'[Logic] (findPartyMembersOnScreen) Party Name: {partyName} [{len(partyName)}]')
+                    bot.log(
+                        f'[Logic] (findPartyMembersOnScreen) On-screen Name: {memberName} [{len(memberName)}]')
+                    bot.log(
+                        f'[Logic] (findPartyMembersOnScreen) Shared characters: {shared}')
+                    bot.log(
+                        f'[Logic] (findPartyMembersOnScreen) Similarity {percentage}%')
+
+                    partyMember['game_window'] = {'x': left,
+                                                  'y': top, 'image': memberImage}
+                    partyMembersOnScreen.append(partyMember)
 
     bot.vision.refresh_frame()
     return partyMembersOnScreen
@@ -228,9 +245,10 @@ def useHealingPotion(bot):
 
 def useHealingSpell(bot):
     bot.memory.SetHotbar(8)
-    if bot.memory.GetSpell() != bot.consts.spell_superior:
+    while bot.memory.GetSpell() != bot.consts.spell_superior:
         pyautogui.press('f2')
-    if foundSelf():
+        time.sleep(0.250)
+    if foundSelf(bot):
         bot.log('[Logic] Casting heal on bot')
         clickSelf(bot)
         if checkForFizzle():
@@ -243,9 +261,10 @@ def useHealingSpell(bot):
 
 def useCallOfTheGodsSpell(bot):
     bot.memory.SetHotbar(8)
-    if bot.memory.GetSpell() != bot.consts.spell_cog:
+    while bot.memory.GetSpell() != bot.consts.spell_cog:
         pyautogui.press('f6')
-    if foundSelf():
+        time.sleep(0.250)
+    if foundSelf(bot):
         bot.log('[Logic] Casting call of the gods on bot')
         clickSelf(bot)
         if checkForFizzle():
@@ -268,9 +287,10 @@ def healPartyMember(bot, partyMember):
     bot.log(
         f'[Logic] Casting superior heal on party member [{partyMember["name"]}]')
     bot.memory.SetHotbar(8)
-    if bot.memory.GetSpell() != bot.consts.spell_superior:
+    while bot.memory.GetSpell() != bot.consts.spell_superior:
         pyautogui.press('f2')
-    clickLocation(bot, partyMember['x'], partyMember['y'], offsets=[48, 55])
+        time.sleep(0.250)
+    clickLocation(bot, partyMember['x'], partyMember['y'], offset=[48, 55])
     if checkForFizzle():
         bot.log('[Logic] Spell fizzled! Recasting...')
         return healPartyMember(bot, partyMember)
@@ -326,12 +346,13 @@ def getPartyMemberToHeal(bot):
 
             locX = partyMember['game_window']['x']
             locY = partyMember['game_window']['y']
+            priority = partyMember['priority']
 
-            if partyMember['priority'] == 5:  # Priority is 5, so ignore all other checks
+            if priority == 5:  # Priority is 5, so ignore all other checks
                 memberToHeal = {
                     'name': partyMember['name'], 'x': locX, 'y': locY}
                 break
-            elif partyMember['priority'] > memberToHeal['priority']:
+            elif priority > memberToHeal['priority']:
                 memberToHeal = {
                     'name': partyMember['name'], 'x': locX, 'y': locY}
         except Exception as e:
@@ -377,25 +398,30 @@ def updatePartyMemberHealths(bot):
 
 
 def updatePartyMemberData(bot):
-    memberCount = bot.last_party_count
-    memberNames = []
-    bot.log(f'[Logic] Updating party member images: [{memberCount}]')
-    if memberCount > 0:
+    partyCount = bot.last_party_count
+    partyNames = []
+    party_data = []
+    bot.log(f'[Logic] Updating party member images: [{partyCount}]')
+    if partyCount > 0:
         matches = bot.vision.find_template('gui-party-top', threshold=0.6)
 
         if np.shape(matches)[1] >= 1:
-            offsets = [35, 22]
-            x = matches[1][0] + offsets[1]
-            y = matches[0][0] + offsets[0]
+            offset = [35, 22]
+            x = matches[1][0] + offset[1]
+            y = matches[0][0] + offset[0]
 
-            bot.party_member_data = []
-            for i in range(memberCount):
+            party_data = []
+            for i in range(partyCount):
                 offSetY = int(i * 15)
                 partyMemberImage = bot.vision.take_screenshot(
                     monitor={'top': y + offSetY, 'left': x, 'width': 80, 'height': 13}, blackAndWhite=False, crop=False, scale=5.0)
                 if len(partyMemberImage) > 0:
-                    partyMemberData = {'name': bot.ocr.textFromImage(partyMemberImage), 'party': {
-                        'top': y + offSetY, 'left': x}, 'priority': 0}
-                    memberNames.append(partyMemberData['name'])
-                    bot.party_member_data.append(partyMemberData)
-        bot.log(f'[Logic] PartyMembers: {memberNames}')
+                    name = bot.ocr.textFromImage(partyMemberImage)
+                    if name != '':
+                        partyMemberData = {'name': name, 'party': {
+                            'top': y + offSetY, 'left': x}, 'priority': 0}
+                        partyNames.append(partyMemberData['name'])
+                        party_data.append(partyMemberData)
+
+    bot.party_member_data = party_data
+    bot.log(f'[Logic] PartyMembers: {partyNames}')

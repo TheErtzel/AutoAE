@@ -14,6 +14,7 @@ class BotThread(threading.Thread):
     vision = None
     controller = None
     queue = None
+    process_found = False
     usedSpell: bool = False
     cog_timeout: bool = False
     last_poison_disease: int = 0
@@ -33,6 +34,7 @@ class BotThread(threading.Thread):
         self.queue = ConsumerThread(kwargs={'bot': self})
         self.queue.setDaemon(True)
         self.queue.start()
+        self.process_found = False
         self.usedSpell = False
         self.cog_timeout = False
         self.last_poison_disease = 0
@@ -57,6 +59,13 @@ class BotThread(threading.Thread):
             self.state = 'paused'
             self.log('Paused')
         time.sleep(0.500)
+
+    def checkGame(self):
+        with self.memory.GameProcess() as process:
+            if self.process_found == True and process == None:
+                self.process_found = False
+            elif self.process_found == False and process != None:
+                self.process_found = True
 
     def callOfTheGodsTimeout(self):
         tick = 12
@@ -95,6 +104,16 @@ class BotThread(threading.Thread):
         if ownStamina < 40:
             self.queue.add('useStaminaPotion')
 
+    def checkPartyWindow(self):
+        partyCount = self.memory.GetPartyCount()
+        # Party count changed, update count and take new images
+        if partyCount != self.last_party_count:
+            self.log(f'[Logic] Party Member Count: [{partyCount}]')
+            self.last_party_count = partyCount
+            time.sleep(0.250)
+            self.queue.add('updatePartyMemberData')
+        self.queue.add('updatePartyMemberHealths')
+
     def checkParty(self):
         partyCount = self.memory.GetPartyCount()
         # Party count changed, update count and take new images
@@ -104,7 +123,9 @@ class BotThread(threading.Thread):
             time.sleep(0.250)
             self.queue.add('updatePartyMemberData')
         self.queue.add('updatePartyMemberHealths')
-        self.queue.add('getPartyMemberToHeal')
+
+        if partyCount > 1:
+            self.queue.add('getPartyMemberToHeal')
 
     def checkTotemsAndFood(self):
         chatLogs = logic.getLastChannelLogs('System', 10)
@@ -130,9 +151,14 @@ class BotThread(threading.Thread):
 
         while True:
             if self.state == 'running':
-                threading.Thread(target=self.vision.refresh_frame).start()
-                threading.Thread(target=self.checkOwnHealth).start()
-                threading.Thread(target=self.checkOwnStamina).start()
-                threading.Thread(target=self.checkParty).start()
-                threading.Thread(target=self.checkTotemsAndFood).start()
-            time.sleep(1)
+                self.checkGame()
+                if self.process_found:
+                    threading.Thread(target=self.checkOwnHealth).start()
+                    threading.Thread(target=self.checkOwnStamina).start()
+                    threading.Thread(target=self.checkParty).start()
+                    threading.Thread(target=self.checkTotemsAndFood).start()
+                else:
+                    self.log('[Bot] Game Process not found!')
+                    self.log('[Bot] Waiting...')
+                    time.sleep(30)
+            time.sleep(0.5)
