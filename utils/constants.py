@@ -10,6 +10,9 @@ PartyImageDir = f'{ImageDir}party\\'
 PartyMembersImageDir = f'{PartyImageDir}members\\'
 Image_TEMP_Dir = f'{ROOT_DIR}images\\tmp\\'
 
+alt_character = {'name': f'Town Guardian',
+                 'templates': ['alt-character-name', 'alt-character-name2']}
+
 self_coords = [417, 340]
 playerOffsets = [0, 45]
 partyWindowOffset = [23, 3]  # left, top

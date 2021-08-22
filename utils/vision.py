@@ -13,7 +13,9 @@ class Vision:
             'gui-party-top': 'assets/party/guiTop.png',
             'own-name': 'assets/ownName.png',
             'own-name-alt': 'assets/ownName-alt.png',
-            'party-member-name': 'assets/party/memberName.png',
+            'alt-character-name': 'assets/party/memberName.png',
+            'alt-character-name2': 'assets/party/memberName2.png',
+            'guild-tag-left0': 'assets/party/tags/guild-left0.png',
             'guild-tag-left1': 'assets/party/tags/guild-left1.png',
             'guild-tag-left2': 'assets/party/tags/guild-left2.png',
             'guild-tag-left3': 'assets/party/tags/guild-left3.png',
@@ -110,6 +112,14 @@ class Vision:
             return []
 
         return cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+    def show_image(self, image, title='Image'):
+        image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        image_gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+        cv2.imshow(title, image)
+        cv2.imshow(f'{title}-grayscale', image_gray)
+        cv2.waitKey(1)
 
     def match_image(self, img_grayscale, image, threshold=0.9):
         """

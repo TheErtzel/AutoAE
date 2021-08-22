@@ -56,8 +56,12 @@ class ConsumerThread(threading.Thread):
             logic.updatePartyMemberData(self.bot)
         elif name == 'updatePartyMemberHealths':
             logic.updatePartyMemberHealths(self.bot)
+        elif name == 'updateAltCharacterData':
+            logic.updateAltCharacterData(self.bot)
         elif name == 'getPartyMemberToHeal':
             logic.getPartyMemberToHeal(self.bot)
+        elif name == 'useHealingSpellOnAlt':
+            logic.useHealingSpellOnAlt(self.bot)
         elif name == 'checkRunes':
             logic.checkRunes(self.bot)
         else:

@@ -19,6 +19,7 @@ class BotThread(threading.Thread):
     cog_timeout: bool = False
     last_poison_disease: int = 0
     party_member_data = []
+    alt_character = None
 
     def __init__(self, group=None, target=None, name=None,
                  args=(), kwargs=None, verbose=None):
@@ -41,6 +42,8 @@ class BotThread(threading.Thread):
         self.last_party_count = 0
         self.party_member_data = []
         self.party_members_on_screen = []
+        self.alt_character = {
+            'name': self.consts.alt_character['name'], 'templates': self.consts.alt_character['templates'], 'priority': 0}
 
         keyboard.add_hotkey('pause', self.toggle_pause)
 
@@ -104,16 +107,6 @@ class BotThread(threading.Thread):
         if ownStamina < 40:
             self.queue.add('useStaminaPotion')
 
-    def checkPartyWindow(self):
-        partyCount = self.memory.GetPartyCount()
-        # Party count changed, update count and take new images
-        if partyCount != self.last_party_count:
-            self.log(f'[Logic] Party Member Count: [{partyCount}]')
-            self.last_party_count = partyCount
-            time.sleep(0.250)
-            self.queue.add('updatePartyMemberData')
-        self.queue.add('updatePartyMemberHealths')
-
     def checkParty(self):
         partyCount = self.memory.GetPartyCount()
         # Party count changed, update count and take new images
@@ -123,9 +116,15 @@ class BotThread(threading.Thread):
             time.sleep(0.250)
             self.queue.add('updatePartyMemberData')
         self.queue.add('updatePartyMemberHealths')
+        self.queue.add('updateAltCharacterData')
 
         if partyCount > 1:
-            self.queue.add('getPartyMemberToHeal')
+            priority = self.alt_character['priority']
+            if priority > 0:
+                self.log(f'Alt Health Priority: {priority}')
+                self.queue.add('useHealingSpellOnAlt')
+            # else:
+            #    self.queue.add('getPartyMemberToHeal')
 
     def checkTotemsAndFood(self):
         chatLogs = logic.getLastChannelLogs('System', 10)
