@@ -29,7 +29,7 @@ class ConsumerThread(threading.Thread):
                 if len(self.workerQ) > 0 and not self.bot.state == 'paused' and not self.processing:
                     item = self.workerQ.popleft()
                     self._process(item)
-                time.sleep(1)
+                time.sleep(0.250)
             except Exception as err:
                 self.bot.log(f'[Consumer] {traceback.format_exc()}')
 
@@ -52,16 +52,24 @@ class ConsumerThread(threading.Thread):
             logic.useCallOfTheGodsSpell(self.bot)
         elif name == 'useStaminaPotion':
             logic.useStaminaPotion(self.bot)
-        elif name == 'updatePartyMemberData':
-            logic.updatePartyMemberData(self.bot)
-        elif name == 'updatePartyMemberHealths':
-            logic.updatePartyMemberHealths(self.bot)
+        elif name == 'updatePartyMembersData':
+            logic.updatePartyMembersData(self.bot)
+        elif name == 'updatePartyMembersHealth':
+            logic.updatePartyMembersHealth(self.bot)
         elif name == 'updateAltCharacterData':
             logic.updateAltCharacterData(self.bot)
         elif name == 'getPartyMemberToHeal':
             logic.getPartyMemberToHeal(self.bot)
-        elif name == 'useHealingSpellOnAlt':
-            logic.useHealingSpellOnAlt(self.bot)
+        elif name == 'getPartyOnScreen':
+            logic.getPartyOnScreen(self.bot)
+        elif name == 'useFood':
+            logic.useFood(self.bot)
+        elif name == 'useRegenerationTotem':
+            logic.useRegenerationTotem(self.bot)
+        elif name == 'useClassTotem':
+            logic.useClassTotem(self.bot)
+        elif name == 'useWerewolfTotem':
+            logic.useWerewolfTotem(self.bot)
         elif name == 'checkRunes':
             logic.checkRunes(self.bot)
         else:

@@ -13,8 +13,6 @@ class Vision:
             'gui-party-top': 'assets/party/guiTop.png',
             'own-name': 'assets/ownName.png',
             'own-name-alt': 'assets/ownName-alt.png',
-            'alt-character-name': 'assets/party/memberName.png',
-            'alt-character-name2': 'assets/party/memberName2.png',
             'guild-tag-left0': 'assets/party/tags/guild-left0.png',
             'guild-tag-left1': 'assets/party/tags/guild-left1.png',
             'guild-tag-left2': 'assets/party/tags/guild-left2.png',

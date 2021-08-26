@@ -8,40 +8,33 @@ pytesseract.pytesseract.tesseract_cmd = 'C:\\Program Files (x86)\\Tesseract-OCR\
 
 def textFromImage(image):
     try:
-        img = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        img = Image.fromarray(img)
-        img = np.array(img)
-        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        blur = cv2.GaussianBlur(gray, (3, 3), 0)
+        # Load image, grayscale, Otsu's threshold
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         thresh = cv2.threshold(
-            blur, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)[1]
+            gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)[1]
 
-        # Morph open to remove noise and invert image
-        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
+        # Morph open to remove noise
+        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
         opening = cv2.morphologyEx(
             thresh, cv2.MORPH_OPEN, kernel, iterations=1)
-        invert = 255 - opening
 
-        # Perform text extraction
+        # Find contours and remove small noise
+        cnts = cv2.findContours(opening, cv2.RETR_EXTERNAL,
+                                cv2.CHAIN_APPROX_SIMPLE)
+        cnts = cnts[0] if len(cnts) == 2 else cnts[1]
+        for c in cnts:
+            area = cv2.contourArea(c)
+            if area < 50:
+                cv2.drawContours(opening, [c], -1, 0, -1)
+
+        # Invert and apply slight Gaussian blur
+        result = 255 - opening
+        #result = cv2.GaussianBlur(result, (3, 3), 0)
+
+        # Perform OCR
         text = pytesseract.image_to_string(
-            invert, lang='eng', config='--psm 6')
-        return text.replace('♀', '').replace('\n\x0c', '').strip()
+            result, lang='eng', config='--psm 6').replace('♀', '').replace('\n\x0c', '').strip()
+
+        return text
     except Exception as e:
         return ''
-
-
-def textFoundInImage(image, text):
-    textFound = False
-    try:
-        imageString = textFromImage(image)
-
-        for line in imageString.splitlines():
-            curText = line.lower()
-            for toFind in text:
-                toFind = toFind.lower()
-                if toFind in curText:
-                    textFound = True
-                    break
-    except Exception as e:
-        return False
-    return textFound
