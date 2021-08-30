@@ -11,6 +11,29 @@ from collections import Counter
 from tkinter import *
 
 
+def bubbleSort(arr, ind=6):
+    """Bubble sort arr based upon subelement ind (default of index 6) 
+       which is 7th element of sub-array since 0 based indexing"""
+    n = len(arr)
+
+    # Traverse through all array elements
+    for i in range(n):
+
+        # Last i elements are already in place
+        for j in range(0, n-i-1):
+
+            # traverse the array from 0 to n-i-1
+            # Swap if the element found is greater
+            # than the next element
+            if int(arr[j][ind]) > int(arr[j+1][ind]):
+                arr[j], arr[j+1] = arr[j+1], arr[j]
+    return arr
+
+
+def sort_Tuple(tup, sortBy=1):
+    return(sorted(tup, key=lambda x: x[sortBy]))
+
+
 def shared_chars(s1, s2):
     return sum((Counter(s1) & Counter(s2)).values())
 
@@ -73,24 +96,35 @@ def getSelfFromParty(bot):
     return result
 
 
-def getSelfLocation(bot):
-    fromParty = getSelfFromParty(bot)
-    if fromParty == None:
-        return (None, None, None)
+def getSelfIndex(bot):
+    index = None
+    if len(bot.party_members_data) > 0:
+        for partyMember in bot.party_members_data:
+            if partyMember['name'] == 'Night Elf Male' or partyMember['name'] == 'Human Male':
+                index = partyMember['index']
+                break
+    return index
 
-    return (fromParty['x'], fromParty['y'], fromParty['z'])
 
-
-def getOnScreenLocation(bot, targetCoords):
+def getOnScreenLocation(bot, targetIndex):
     try:
         result = (None, None)
-        selfLocation = getSelfLocation(bot)
-        # return none if character is on a different Z access
-        if selfLocation[2] != targetCoords[2]:
+        selfIndex = getSelfIndex(bot)
+        if selfIndex == None:
+            return result
+        selfCoords = bot.memory.GetPartyMemberLocation(selfIndex)
+        if selfCoords[0] == None:
+            return result
+        targetCoords = bot.memory.GetPartyMemberLocation(targetIndex)
+        if targetCoords[0] == None:
             return result
 
-        xOffset = abs(targetCoords[0] - selfLocation[0])
-        yOffset = abs(targetCoords[1] - selfLocation[1])
+        # return none if character is on a different Z access
+        if selfCoords[2] != targetCoords[2]:
+            return result
+
+        xOffset = abs(targetCoords[0] - selfCoords[0])
+        yOffset = abs(targetCoords[1] - selfCoords[1])
 
         if xOffset < bot.consts.MIN_ONSCREEN_COORDS[0]:
             return result
@@ -104,21 +138,54 @@ def getOnScreenLocation(bot, targetCoords):
         x = bot.consts.SELF_ONSCREEN_COORDS[0]
         y = bot.consts.SELF_ONSCREEN_COORDS[1]
 
-        if targetCoords[0] > selfLocation[0]:
-            x += (xOffset * 38)
-        elif targetCoords[0] < selfLocation[0]:
-            x -= (xOffset * 38)
+        if targetCoords[0] > selfCoords[0]:
+            x += (xOffset / 38)
+        elif targetCoords[0] < selfCoords[0]:
+            x -= (xOffset / 38)
 
-        if targetCoords[1] > selfLocation[1]:
+        if targetCoords[1] > selfCoords[1]:
             # if our target is lower then us, target higher up on them
-            y += (xOffset * 38) - 20
-        elif targetCoords[1] < selfLocation[1]:
+            y += (yOffset / 38) - 20
+        elif targetCoords[1] < selfCoords[1]:
             # if our target is higher then us, target lower down on them
-            y -= (xOffset * 38) + 20
+            y -= (yOffset / 38) + 20
 
-        return (x, y)
-    except:
-        return (None, None)
+        result = (x, y)
+    except Exception as e:
+        bot.log(f'[Logic] {traceback.format_exc()}')
+    finally:
+        return result
+
+
+def getDistanceApart(bot, sourceCoords, targetCoords):
+    try:
+        result = (0, 0)
+        # return none if character is on a different Z access
+        if sourceCoords[2] != targetCoords[2]:
+            return result
+
+        xOffset = abs(targetCoords[0] - sourceCoords[0])
+        yOffset = abs(targetCoords[1] - sourceCoords[1])
+
+        if xOffset < bot.consts.MIN_ONSCREEN_COORDS[0]:
+            return result
+        if yOffset < bot.consts.MIN_ONSCREEN_COORDS[1]:
+            return result
+        if xOffset > bot.consts.MAX_ONSCREEN_COORDS[0]:
+            return result
+        if yOffset > bot.consts.MAX_ONSCREEN_COORDS[1]:
+            return result
+
+        if targetCoords[0] < sourceCoords[0]:
+            xOffset = -abs(xOffset)
+        if targetCoords[1] < sourceCoords[1]:
+            yOffset = -abs(yOffset)
+
+        result = (xOffset, yOffset)
+    except Exception as e:
+        bot.log(f'[Logic] {traceback.format_exc()}')
+    finally:
+        return result
 
 
 def clickLocation(bot, x, y, offset=[48, 55]):
@@ -126,32 +193,59 @@ def clickLocation(bot, x, y, offset=[48, 55]):
         x += offset[0]
         y += offset[1]
 
-        bot.controller.move_mouse(x, y)
+        bot.controller.mouse_set(x, y)
         time.sleep(0.250)
         bot.controller.left_mouse_click()
         time.sleep(0.250)
 
 
-def clickNpcID(bot, npcID, baseX, baseY, offset=[0, -75]):
+def foundNpcIdAtPosition(bot, npcID, x, y):
+    bot.controller.mouse_set(x, y)
+    if bot.memory.GetMouseNPCId() == npcID:
+        return True
+    return False
+
+
+def generateNpcRange(baseX, baseY, TILE_SIZE):
+    npcRange = [(baseX, baseY)]
+    try:
+        for x in range(5):
+            for y in range(5):
+                npcRange.append(
+                    (baseX - (x * TILE_SIZE), baseY + (y * TILE_SIZE)))
+            for y in range(5):
+                npcRange.append(
+                    (baseX + (x * TILE_SIZE), baseY + (y * TILE_SIZE)))
+            for y in range(5):
+                npcRange.append(
+                    (baseX - (x * TILE_SIZE), baseY - (y * TILE_SIZE)))
+            for y in range(5):
+                npcRange.append(
+                    (baseX + (x * TILE_SIZE), baseY - (y * TILE_SIZE)))
+    except Exception as e:
+        print(f'[Logic] {traceback.format_exc()}')
+    finally:
+        return npcRange
+
+
+def clickNpcID(bot, npcID, baseX, baseY, offset=[0, 0]):
     if baseX != None and baseY != None:
         foundID = False
         bot.log(
             f'clickNpcID [1]: npcID: {npcID}, baseX: {baseX}, baseY: {baseY}, offset: {offset}')
-        for index in range(15):
-            x = (baseX - index) + offset[0]
-            y = (baseX - index) + offset[1]
 
-            bot.controller.move_mouse(x, y)
-            if bot.memory.GetMouseNPCId() == npcID:
-                foundID = True
-                break
+        mouseX, mouseY = bot.controller.getCursorPos()
+        foundID = foundNpcIdAtPosition(
+            bot, npcID, mouseX + offset[0], mouseY + offset[1])
+
+        foundID = foundNpcIdAtPosition(
+            bot, npcID, baseX + offset[0], baseY + offset[1])
+
         if not foundID:
-            for index in range(15):
-                x = (baseX + index) + offset[0]
-                y = (baseX + index) + offset[1]
-
-                bot.controller.move_mouse(x, y)
-                if bot.memory.GetMouseNPCId() == npcID:
+            npcRange = sort_Tuple(generateNpcRange(
+                baseX, baseY, bot.consts.TILE_SIZE), 1)
+            for nr in npcRange:
+                if foundNpcIdAtPosition(bot, npcID, nr[0] + offset[0], nr[1] + offset[1]):
                     foundID = True
                     break
 
@@ -181,8 +275,7 @@ def clickObject(bot, template, threshold=0.6, offset=[0, 0]):
 
 
 def clickSelf(bot):
-    location = getSelfLocation(bot)
-    selfCoords = getOnScreenLocation(bot, location)
+    selfCoords = bot.consts.SELF_ONSCREEN_COORDS
     if selfCoords[0] != None:
         clickLocation(bot, selfCoords[0], selfCoords[1], offset=[0, 25])
 
@@ -236,10 +329,8 @@ def findSelfOnScreen(bot):
         for partyMember in bot.party_members_data:
             if partyMember['name'] == 'Night Elf Male' or partyMember['name'] == 'Human Male':
                 partyMemberCoords = getOnScreenLocation(
-                    bot, (partyMember['x'], partyMember['y'], partyMember['z']))
+                    bot, partyMember['index'])
                 if partyMemberCoords[0] != None:
-                    partyMember['game_window'] = {
-                        'left': partyMemberCoords[0], 'top': partyMemberCoords[1]}
                     selfOnScreen = partyMember
 
     if selfOnScreen != None:
@@ -258,11 +349,8 @@ def findPartyMembersOnScreen(bot):
             if partyMember['name'] == 'Night Elf Male' or partyMember['name'] == 'Human Male':
                 continue
 
-            partyMemberCoords = getOnScreenLocation(
-                bot, (partyMember['x'], partyMember['y'], partyMember['z']))
+            partyMemberCoords = getOnScreenLocation(bot, partyMember['index'])
             if partyMemberCoords[0] != None:
-                partyMember['game_window'] = {
-                    'left': partyMemberCoords[0], 'top': partyMemberCoords[1]}
                 partyMembersOnScreen.append(partyMember)
     bot.log(
         f'[Logic] ({len(partyMembersOnScreen)}) Party members detected on-screen...')
@@ -393,7 +481,7 @@ def useHealingSpell(bot):
         prepareToHeal(bot)
         selectSpell(bot, bot.consts.Spell.SUPERIOR_HEAL, 'f2')
 
-        bot.log('[Logic] Casting heal on bot')
+        bot.log('[Logic] Casting heal on self')
         clickSelf(bot)
         if checkForComatMessage('Your Superior Heal spell fizzled'):
             bot.log('[Logic] Superior Heal fizzled! Recasting...')
@@ -423,32 +511,67 @@ def useCallOfTheGodsSpell(bot):
 def useStaminaPotion(bot):
     if bot.memory.GetHotbar() != 8:
         bot.memory.SetHotbar(8)
-    pyautogui.press('f4')
+    pyautogui.press('f3')
 
 
 def healPartyMember(bot, partyMember):
-    if not 'name' in partyMember:
-        return
+    try:
+        if not 'name' in partyMember:
+            return
 
-    bot.active_party_member_name = partyMember['name']
-    prepareToHeal(bot)
+        bot.active_party_member_name = partyMember['name']
+        prepareToHeal(bot)
 
-    while bot.memory.GetSpell() != bot.consts.Spell.SUPERIOR_HEAL:
-        pyautogui.press('f2')
-        time.sleep(0.250)
+        while bot.memory.GetSpell() != bot.consts.Spell.SUPERIOR_HEAL:
+            pyautogui.press('f2')
+            time.sleep(0.250)
 
-    bot.log(
-        f'[Logic] Casting superior heal on party member [{partyMember["name"]}] (priority: {partyMember["priority"]})')
-    clickNpcID(bot, partyMember['npcID'], partyMember['game_window']['left'],
-               partyMember['game_window']['top'])
+        selfCoords = bot.consts.SELF_ONSCREEN_COORDS
+        selfIndex = getSelfIndex(bot)
+        if selfIndex == None:
+            return
+        selfLocation = bot.memory.GetPartyMemberLocation(selfIndex)
+        if selfLocation[0] == None:
+            return
+        memberLocation = bot.memory.GetPartyMemberLocation(
+            partyMember['index'])
+        if memberLocation[0] == None:
+            return
 
-    if checkForComatMessage('Your Superior Heal spell fizzled'):
-        bot.log('[Logic] Spell fizzled! Recasting...')
-        clickNpcID(bot, partyMember['npcID'], partyMember['game_window']['left'],
-                   partyMember['game_window']['top'])
+        xDif, yDif = getDistanceApart(bot, selfLocation, memberLocation)
 
-    time.sleep(bot.consts.TIMER_SUPERIOR_HEAL)
-    checkRunes(bot)
+        xOffset = 0
+        yOffset = 0
+        if xDif < 0:
+            xOffset = -abs(xDif * bot.consts.TILE_SIZE)
+        else:
+            xOffset = abs(xDif * bot.consts.TILE_SIZE)
+
+        if yDif < 0:
+            yOffset = -abs(yDif * bot.consts.TILE_SIZE)
+        else:
+            yOffset = abs(yDif * bot.consts.TILE_SIZE)
+
+        bot.log(f'[Logic] selfCoords: {selfCoords}')
+        bot.log(f'[Logic] selfLocation: {selfLocation}')
+        bot.log(f'[Logic] memberLocation: {memberLocation}')
+        bot.log(f'[Logic] xDif: {xDif}, yDif: {yDif}')
+        bot.log(f'[Logic] xOffset: {xOffset}, yOffset: {yOffset}')
+
+        bot.log(
+            f'[Logic] Casting superior heal on party member [{partyMember["name"]}] (priority: {partyMember["priority"]})')
+        clickNpcID(bot, partyMember['npcID'], selfCoords[0],
+                   selfCoords[1], offset=[xOffset, yOffset])
+
+        if checkForComatMessage('Your Superior Heal spell fizzled'):
+            bot.log('[Logic] Spell fizzled! Recasting...')
+            clickNpcID(bot, partyMember['npcID'], selfCoords[0],
+                       selfCoords[1], offset=[xOffset, yOffset])
+
+        time.sleep(bot.consts.TIMER_SUPERIOR_HEAL)
+        checkRunes(bot)
+    except Exception as e:
+        bot.log(f'[Logic] {traceback.format_exc()}')
 
 
 def useFood(bot):
@@ -479,7 +602,7 @@ def getPartyMemberToHeal(bot):
     if bot.last_party_count == 0:
         return
 
-    memberToHeal = {'priority': -1, 'x': 0, 'y': 0}
+    memberToHeal = {'priority': -1}
     bot.log('[Logic] Checking if any party member needs healing...')
 
     doesAMemberNeedHealing = False
@@ -492,8 +615,8 @@ def getPartyMemberToHeal(bot):
                 doesAMemberNeedHealing = True
 
     # Check if anyone needs healing in the party
-    # if not doesAMemberNeedHealing:
-    #    return
+    if not doesAMemberNeedHealing:
+        return
 
     bot.party_members_on_screen = findPartyMembersOnScreen(bot)
     if len(bot.party_members_on_screen) == 0:
@@ -534,43 +657,47 @@ def getPartyMemberToHeal(bot):
             f'[Logic] Failed to find any party members needing healing on the screen')
 
 
-def updatePartyMembersHealth(bot):
-    if bot.last_party_count == 0:
-        return
-
+def getPartyMembersPriority(bot, partyMember):
     healthColor = (239, 74, 74)
-    bot.log('[Logic] Checking the health levels of all members in the party list...')
-    for partyMember in bot.party_members_data:
-        try:
-            if bot.state != 'running':
-                break
-            locX = int(partyMember['gui']['left'] + 132)
-            locY = int(partyMember['gui']['top'] + 3)
-            priority = 0
+    priority = 0
+    try:
+        if bot.state != 'running':
+            return partyMember
+        locX = int(partyMember['gui']['left'] + 132)
+        locY = int(partyMember['gui']['top'] + 3)
 
-            if ImageGrab.grab().getpixel((locX, locY)) != healthColor:
-                priority = 1
-                if not ImageGrab.grab().getpixel((locX - 5, locY)) == healthColor:
-                    priority = 2
-                    if not ImageGrab.grab().getpixel((locX - 10, locY)) == healthColor:
-                        priority = 3
-                        if not ImageGrab.grab().getpixel((locX - 15, locY)) == healthColor:
-                            priority = 4
-                            if not ImageGrab.grab().getpixel((locX - 20, locY)) == healthColor:
-                                priority = 5
-                                if not ImageGrab.grab().getpixel((locX - 25, locY)) == healthColor:
-                                    priority = 6
-            partyMember['priority'] = priority
-        except Exception as e:
-            bot.log(f'[Logic] {traceback.format_exc()}')
-            continue
+        if ImageGrab.grab().getpixel((locX, locY)) != healthColor:
+            priority = 1
+            if not ImageGrab.grab().getpixel((locX - 5, locY)) == healthColor:
+                priority = 2
+                if not ImageGrab.grab().getpixel((locX - 10, locY)) == healthColor:
+                    priority = 3
+                    if not ImageGrab.grab().getpixel((locX - 15, locY)) == healthColor:
+                        priority = 4
+                        if not ImageGrab.grab().getpixel((locX - 20, locY)) == healthColor:
+                            priority = 5
+                            if not ImageGrab.grab().getpixel((locX - 25, locY)) == healthColor:
+                                priority = 6
+    except Exception as e:
+        bot.log(f'[Logic] {traceback.format_exc()}')
+    finally:
+        return priority
 
 
 def updatePartyMembersData(bot):
     partyCount = bot.last_party_count
+    bot.log(f'[Logic] Updating party members coords: [{partyCount}]')
+
+    for party_member in bot.party_members_data:
+        party_member['priority'] = getPartyMembersPriority(
+            bot, party_member)
+
+
+def getPartyMembersData(bot):
+    partyCount = bot.last_party_count
     partyNames = []
     party_data = []
-    bot.log(f'[Logic] Updating party member data: [{partyCount}]')
+    bot.log(f'[Logic] Updating party members data: [{partyCount}]')
     if partyCount > 0:
         matches = bot.vision.find_template('gui-party-top', threshold=0.6)
 
@@ -579,15 +706,17 @@ def updatePartyMembersData(bot):
             x = matches[1][0] + offset[1]
             y = matches[0][0] + offset[0]
 
+            index = 0
             party_data = bot.memory.GetPartyMemberData()
-            for i in range(partyCount):
-                offSetY = int(i * 15)
-                if len(party_data) > i:
-                    party_data[i]['gui'] = {'top': y + offSetY, 'left': x}
-                    party_data[i]['priority'] = 0
-                    partyNames.append(party_data[i]['name'])
+            for party_member in party_data:
+                offSetY = int(index * 15)
+                party_member['index'] = index
+                party_member['gui'] = {'top': y + offSetY, 'left': x}
+                party_member['priority'] = 0
+                partyNames.append(party_member['name'])
+                index += 1
 
     bot.party_members_data = party_data
     bot.log(f'[Logic] PartyMembers: {partyNames}')
-    bot.log(f'[Logic] PartyMembers Data: {party_data}')
-    updatePartyMembersHealth(bot)
+    if len(party_data) > 0:
+        bot.log(f'[Logic] PartyMembers Data: {party_data}')

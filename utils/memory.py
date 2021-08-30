@@ -460,11 +460,11 @@ def GetPartyMemberData():
                     _base + 0x003B1AB8, offsets=[0x134] + offsets + [0x4C])
                 resultZ = process.read(pointZ)
                 data.append(
-                    {'npcID': resultNpcID, 'name': resultName, 'x': resultX, 'y': resultY, 'z': resultZ})
+                    {'npcID': resultNpcID, 'name': resultName, 'coords': (resultX, resultY, resultZ)})
     return data
 
 
-def GetPartyMemberLocations():
+def GetPartyMembersLocations():
     partyCount = GetPartyCount()
     locations = []
     with GameProcess() as process:
@@ -486,7 +486,7 @@ def GetPartyMemberLocations():
     return locations
 
 
-def GetPartyMemberNames():
+def GetPartyMembersNames():
     partyCount = GetPartyCount()
     names = []
     with GameProcess() as process:
@@ -502,7 +502,7 @@ def GetPartyMemberNames():
     return names
 
 
-def GetPartyMembersLocation(index):
+def GetPartyMemberLocation(index):
     offsets = [0]
     for i in range(index):
         offsets.append(0)
@@ -539,7 +539,7 @@ def GetPartyMembersData(index):
     offsets = [0]
     for i in range(index):
         offsets.append(0)
-    result = None
+    result = {'npcID': None, 'name': None, 'coords': (None, None, None)}
     with GameProcess() as process:
         if process != None:
             pointerNpcID = process.get_pointer(
@@ -558,7 +558,7 @@ def GetPartyMembersData(index):
                 _base + 0x003B1AB8, offsets=[0x134] + offsets + [0x4C])
             resultZ = process.read(pointZ)
             result = {'npcID': resultNpcID, 'name': resultName,
-                      'x': resultX, 'y': resultY, 'z': resultZ}
+                      'coords': (resultX, resultY, resultZ)}
     return result
 
 
@@ -606,9 +606,20 @@ def GetFollowerHealth():
 def CheckSystemMessage():
     # returns 0 if no msg, and a value if message is present on screen
     # 15139368 = PrivateMessage?
-    result = 0
+    result = ''
     with GameProcess() as process:
         if process != None:
             point = process.get_pointer(_base + 0x003B1B50)
-            result = process.read(point)
+            result = process.readString(point, 500)
+    return result
+
+
+def GetGuildMessage():
+    # returns 0 if no msg, and a value if message is present on screen
+    # 15139368 = PrivateMessage?
+    result = ''
+    with GameProcess() as process:
+        if process != None:
+            point = process.get_pointer(_base + 0x003B1B50)
+            result = process.readString(point, 500)
     return result
