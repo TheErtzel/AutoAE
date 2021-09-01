@@ -5,24 +5,17 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Python: test",
-      "type": "python",
-      "request": "launch",
-      "program": "C:\\git\\AutoAE\\test.py",
-      "console": "integratedTerminal"
-    },
-    {
-      "name": "Python: AutoAE",
-      "type": "python",
-      "request": "launch",
-      "program": "C:\\git\\AutoAE\\AutoAE.py",
-      "console": "integratedTerminal"
-    },
-    {
       "name": "Python: AutoHealer",
       "type": "python",
       "request": "launch",
-      "program": "C:\\git\\AutoAE\\auto_healer.py",
+      "program": "C:\\git\\AutoAE\\autoHealer.py",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Python: AutoAttacker",
+      "type": "python",
+      "request": "launch",
+      "program": "C:\\git\\AutoAE\\autoAttacker.py",
       "console": "integratedTerminal"
     },
     {

@@ -12,7 +12,7 @@ from tkinter import *
 
 
 def bubbleSort(arr, ind=6):
-    """Bubble sort arr based upon subelement ind (default of index 6) 
+    """Bubble sort arr based upon subelement ind (default of index 6)
        which is 7th element of sub-array since 0 based indexing"""
     n = len(arr)
 
@@ -72,8 +72,15 @@ def getLastChannelLogs(channel, amount):
         return systemLogs
 
 
-def checkLogsForMessage(chatLogs=[], text='fizzled.'):
-    return [text for chatLog in chatLogs if text in chatLog]
+def checkLogsForMessage(chatLogs=[], text='fizzled.', textOpposite=''):
+    # return [text for chatLog in chatLogs if text in chatLog]
+    textFound = False
+    for log in chatLogs:
+        if f'({text})' in log:
+            textFound = True
+        elif textOpposite != '' and f'({textOpposite})' in log:
+            textFound = False
+    return textFound
 
 
 def checkForChannelMessage(channel='System', text='fizzled.', amount=5):
@@ -193,20 +200,20 @@ def clickLocation(bot, x, y, offset=[48, 55]):
         x += offset[0]
         y += offset[1]
 
-        bot.controller.mouse_set(x, y)
+        bot.controller.move_mouse(x, y)
         time.sleep(0.250)
-        bot.controller.left_mouse_click()
+        bot.controller.left_mouse_click(x, y)
         time.sleep(0.250)
 
 
 def foundNpcIdAtPosition(bot, npcID, x, y):
-    bot.controller.mouse_set(x, y)
+    bot.controller.move_mouse(x, y, False)
     if bot.memory.GetMouseNPCId() == npcID:
         return True
     return False
 
 
-def generateNpcRange(baseX, baseY, TILE_SIZE):
+def generateNpcRange(bot, baseX, baseY, TILE_SIZE):
     npcRange = [(baseX, baseY)]
     try:
         for x in range(5):
@@ -223,7 +230,7 @@ def generateNpcRange(baseX, baseY, TILE_SIZE):
                 npcRange.append(
                     (baseX + (x * TILE_SIZE), baseY - (y * TILE_SIZE)))
     except Exception as e:
-        print(f'[Logic] {traceback.format_exc()}')
+        bot.log(f'[Logic] {traceback.format_exc()}')
     finally:
         return npcRange
 
@@ -243,7 +250,7 @@ def clickNpcID(bot, npcID, baseX, baseY, offset=[0, 0]):
 
         if not foundID:
             npcRange = sort_Tuple(generateNpcRange(
-                baseX, baseY, bot.consts.TILE_SIZE), 1)
+                bot, baseX, baseY, bot.consts.TILE_SIZE), 1)
             for nr in npcRange:
                 if foundNpcIdAtPosition(bot, npcID, nr[0] + offset[0], nr[1] + offset[1]):
                     foundID = True
@@ -263,48 +270,21 @@ def canSeeObject(bot, template, threshold=0.9):
         return False
 
 
-def clickObject(bot, template, threshold=0.6, offset=[0, 0]):
+def clickTemplate(bot, template, threshold=0.6, offset=[0, 0]):
     try:
-        matches = bot.vision.find_template(template, threshold=0.6)
+        matches = bot.vision.find_template(template, threshold=threshold)
 
         if np.shape(matches)[1] >= 1:
-            clickLocation(bot, matches[0][1], matches[0][1], offset=[0, 0])
+            clickLocation(bot, matches[0][1], matches[0][1], offset=offset)
             time.sleep(0.250)
     finally:
         bot.vision.refresh_frame()
 
 
 def clickSelf(bot):
-    selfCoords = bot.consts.SELF_ONSCREEN_COORDS
+    selfCoords = bot.consts.SELF_COORDS
     if selfCoords[0] != None:
-        clickLocation(bot, selfCoords[0], selfCoords[1], offset=[0, 25])
-
-
-def foundSelf(bot):
-    bot.vision.refresh_frame(bot.consts.GAME_REGION)
-    canSeeObject = False
-    try:
-        for template in ['own-name', 'own-name-alt']:
-            template_matches = bot.vision.find_template_matches(
-                template, monitor=bot.consts.GAME_REGION, threshold=0.6)
-            canSeeObject = len(template_matches) > 0 and np.shape(
-                template_matches)[1] >= 1
-            if canSeeObject:
-                break
-    finally:
-        bot.vision.refresh_frame()
-        return canSeeObject
-
-
-def foundPartyWindow(bot):
-    bot.vision.refresh_frame()
-    canSeeObject = False
-    try:
-        matches = bot.vision.scaled_find_template(
-            'gui-party-top', threshold=0.6)
-        canSeeObject = np.shape(matches)[1] >= 1
-    finally:
-        return canSeeObject
+        clickLocation(bot, selfCoords[0], selfCoords[1], offset=[0, 0])
 
 
 def foundImage(bot, image, scales=[1.0, 0.9, 1.1]):
@@ -465,6 +445,26 @@ def useBodyRune(bot):
         time.sleep(0.250)
 
 
+def useNonMagicalWeapon(bot):
+    RuneSlots = bot.memory.GetRuneSlots()
+
+    if bot.memory.GetHotbar() != 8:
+        bot.log('[Logic] Switching to hotbar #8')
+        bot.memory.SetHotbar(8)
+
+    # Equip a non-magical weapon
+    if RuneSlots > 0:
+        bot.log('[Logic] Switching to non-magical weapon')
+        pyautogui.keyDown('shift')
+        time.sleep(0.250)
+        pyautogui.press('F2')
+        time.sleep(0.250)
+        pyautogui.press('F3')
+        time.sleep(0.250)
+        pyautogui.keyUp('shift')
+        time.sleep(0.250)
+
+
 def selectSpell(bot, spell_id=int, hotbar_key=str):
     while bot.memory.GetSpell() != spell_id:
         pyautogui.press(hotbar_key)
@@ -476,36 +476,40 @@ def prepareToHeal(bot):
     useBodyRune(bot)
 
 
-def useHealingSpell(bot):
-    if foundSelf(bot):
-        prepareToHeal(bot)
-        selectSpell(bot, bot.consts.Spell.SUPERIOR_HEAL, 'f2')
+def prepareToAttack(bot):
+    if bot.memory.GetSpell() != 0:
+        pyautogui.press('f2')
+    # useNonMagicalWeapon(bot)
 
-        bot.log('[Logic] Casting heal on self')
+
+def useHealingSpell(bot):
+    prepareToHeal(bot)
+    selectSpell(bot, bot.consts.Spell.SUPERIOR_HEAL, 'f2')
+
+    bot.log('[Logic] Casting heal on self')
+    clickSelf(bot)
+    if checkForComatMessage('Your Superior Heal spell fizzled'):
+        bot.log('[Logic] Superior Heal fizzled! Recasting...')
         clickSelf(bot)
-        if checkForComatMessage('Your Superior Heal spell fizzled'):
-            bot.log('[Logic] Superior Heal fizzled! Recasting...')
-            clickSelf(bot)
-        time.sleep(bot.consts.TIMER_SUPERIOR_HEAL)
-        checkRunes(bot)
+    time.sleep(bot.consts.TIMER_SUPERIOR_HEAL)
+    checkRunes(bot)
 
 
 def useCallOfTheGodsSpell(bot):
-    if foundSelf(bot):
-        prepareToHeal(bot)
-        selectSpell(bot, bot.consts.Spell.CALL_OF_THE_GODS, 'f6')
+    prepareToHeal(bot)
+    selectSpell(bot, bot.consts.Spell.CALL_OF_THE_GODS, 'f6')
 
-        bot.log('[Logic] Casting Call of the Gods on bot')
+    bot.log('[Logic] Casting Call of the Gods on bot')
+    clickSelf(bot)
+    if checkForComatMessage('Your Call of the Gods spell fizzled'):
+        bot.log('[Logic] Call of the Gods fizzled! Recasting...')
         clickSelf(bot)
-        if checkForComatMessage('Your Call of the Gods spell fizzled'):
-            bot.log('[Logic] Call of the Gods fizzled! Recasting...')
-            clickSelf(bot)
-        elif checkForComatMessage('You cannot cast Call of the Gods for another'):
-            bot.log(
-                '[Logic] Call of the Gods on cooldown! Switching to Superior Heal')
-            return useHealingSpell(bot)
-        time.sleep(bot.consts.TIMER_SUPERIOR_HEAL)
-        checkRunes(bot)
+    elif checkForComatMessage('You cannot cast Call of the Gods for another'):
+        bot.log(
+            '[Logic] Call of the Gods on cooldown! Switching to Superior Heal')
+        return useHealingSpell(bot)
+    time.sleep(bot.consts.TIMER_SUPERIOR_HEAL)
+    checkRunes(bot)
 
 
 def useStaminaPotion(bot):
@@ -598,6 +602,29 @@ def useWerewolfTotem(bot):
     pyautogui.press('f12')
 
 
+def getNewTarget(bot):
+    if bot.memory.GetTargetId() > 0:
+        return
+
+    prepareToAttack(bot)
+
+    bot.log('[Attacker] Looking for a new target...')
+    bot.looking_for_target = True
+    for i in range(30):
+        if bot.state != 1:
+            target = -1
+            break
+        pyautogui.press("`")
+        time.sleep(0.250)
+        if bot.memory.GetTargetId() > 0:
+            bot.log(f'[Logic] Mew target found!')
+            break
+        else:
+            time.sleep(0.500)
+
+    bot.looking_for_target = False
+
+
 def getPartyMemberToHeal(bot):
     if bot.last_party_count == 0:
         return
@@ -615,8 +642,8 @@ def getPartyMemberToHeal(bot):
                 doesAMemberNeedHealing = True
 
     # Check if anyone needs healing in the party
-    if not doesAMemberNeedHealing:
-        return
+    # if not doesAMemberNeedHealing:
+    #    return
 
     bot.party_members_on_screen = findPartyMembersOnScreen(bot)
     if len(bot.party_members_on_screen) == 0:
@@ -626,7 +653,7 @@ def getPartyMemberToHeal(bot):
         '[Logic] Checking for the party member on-screen with the highest priority level...')
     for partyMember in bot.party_members_on_screen:
         try:
-            if bot.state != 'running':
+            if bot.state != 1:
                 break
 
             priority = partyMember['priority']
@@ -661,7 +688,7 @@ def getPartyMembersPriority(bot, partyMember):
     healthColor = (239, 74, 74)
     priority = 0
     try:
-        if bot.state != 'running':
+        if bot.state != 1:
             return partyMember
         locX = int(partyMember['gui']['left'] + 132)
         locY = int(partyMember['gui']['top'] + 3)
@@ -706,15 +733,12 @@ def getPartyMembersData(bot):
             x = matches[1][0] + offset[1]
             y = matches[0][0] + offset[0]
 
-            index = 0
             party_data = bot.memory.GetPartyMemberData()
             for party_member in party_data:
-                offSetY = int(index * 15)
-                party_member['index'] = index
+                offSetY = int(party_member['index'] * 15)
                 party_member['gui'] = {'top': y + offSetY, 'left': x}
                 party_member['priority'] = 0
                 partyNames.append(party_member['name'])
-                index += 1
 
     bot.party_members_data = party_data
     bot.log(f'[Logic] PartyMembers: {partyNames}')

@@ -1,0 +1,947 @@
+<?xml version="1.0" encoding="utf-8"?>
+<CheatTable>
+  <CheatEntries>
+    <CheatEntry>
+      <ID>1</ID>
+      <Description>"Self X"</Description>
+      <LastState Value="833" RealAddress="0370AF84"/>
+      <ShowAsSigned>0</ShowAsSigned>
+      <VariableType>4 Bytes</VariableType>
+      <Address>"client.exe"+003502D4</Address>
+      <Offsets>
+        <Offset>2F4</Offset>
+      </Offsets>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>19</ID>
+      <Description>"Self Y"</Description>
+      <LastState Value="679" RealAddress="0370AF88"/>
+      <ShowAsSigned>0</ShowAsSigned>
+      <VariableType>4 Bytes</VariableType>
+      <Address>"client.exe"+003502D4</Address>
+      <Offsets>
+        <Offset>2F8</Offset>
+      </Offsets>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>39</ID>
+      <Description>"Self Y - 1"</Description>
+      <Options moHideChildren="1"/>
+      <LastState Value="" RealAddress="00000000"/>
+      <GroupHeader>1</GroupHeader>
+      <CheatEntries>
+        <CheatEntry>
+          <ID>40</ID>
+          <Description>"NPC ID"</Description>
+          <ShowAsSigned>0</ShowAsSigned>
+          <VariableType>4 Bytes</VariableType>
+          <Address>"client.exe"+003502D4</Address>
+          <Offsets>
+            <Offset>4</Offset>
+            <Offset>44</Offset>
+            <Offset>C</Offset>
+            <Offset>10</Offset>
+            <Offset>210</Offset>
+          </Offsets>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>41</ID>
+          <Description>"X"</Description>
+          <ShowAsSigned>0</ShowAsSigned>
+          <VariableType>4 Bytes</VariableType>
+          <Address>"client.exe"+003502D4</Address>
+          <Offsets>
+            <Offset>C</Offset>
+            <Offset>44</Offset>
+            <Offset>C</Offset>
+            <Offset>10</Offset>
+            <Offset>210</Offset>
+          </Offsets>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>42</ID>
+          <Description>"Y"</Description>
+          <ShowAsSigned>0</ShowAsSigned>
+          <VariableType>4 Bytes</VariableType>
+          <Address>"client.exe"+003502D4</Address>
+          <Offsets>
+            <Offset>10</Offset>
+            <Offset>44</Offset>
+            <Offset>C</Offset>
+            <Offset>10</Offset>
+            <Offset>210</Offset>
+          </Offsets>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>82</ID>
+          <Description>"HP"</Description>
+          <ShowAsSigned>0</ShowAsSigned>
+          <VariableType>4 Bytes</VariableType>
+          <Address>"client.exe"+003502D4</Address>
+          <Offsets>
+            <Offset>18</Offset>
+            <Offset>44</Offset>
+            <Offset>C</Offset>
+            <Offset>10</Offset>
+            <Offset>210</Offset>
+          </Offsets>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>83</ID>
+          <Description>"Max HP"</Description>
+          <ShowAsSigned>0</ShowAsSigned>
+          <VariableType>4 Bytes</VariableType>
+          <Address>"client.exe"+003502D4</Address>
+          <Offsets>
+            <Offset>1C</Offset>
+            <Offset>44</Offset>
+            <Offset>C</Offset>
+            <Offset>10</Offset>
+            <Offset>210</Offset>
+          </Offsets>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>43</ID>
+          <Description>"Name"</Description>
+          <ShowAsSigned>0</ShowAsSigned>
+          <VariableType>String</VariableType>
+          <Length>20</Length>
+          <Unicode>0</Unicode>
+          <CodePage>0</CodePage>
+          <ZeroTerminate>1</ZeroTerminate>
+          <Address>"client.exe"+003502D4</Address>
+          <Offsets>
+            <Offset>10C</Offset>
+            <Offset>44</Offset>
+            <Offset>C</Offset>
+            <Offset>10</Offset>
+            <Offset>210</Offset>
+          </Offsets>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>44</ID>
+          <Description>"Guild Tag"</Description>
+          <ShowAsSigned>0</ShowAsSigned>
+          <VariableType>String</VariableType>
+          <Length>20</Length>
+          <Unicode>0</Unicode>
+          <CodePage>0</CodePage>
+          <ZeroTerminate>1</ZeroTerminate>
+          <Address>"client.exe"+003502D4</Address>
+          <Offsets>
+            <Offset>13C</Offset>
+            <Offset>44</Offset>
+            <Offset>C</Offset>
+            <Offset>10</Offset>
+            <Offset>210</Offset>
+          </Offsets>
+        </CheatEntry>
+      </CheatEntries>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>34</ID>
+      <Description>"Self Y + 1"</Description>
+      <Options moHideChildren="1"/>
+      <LastState Value="" RealAddress="00000000"/>
+      <GroupHeader>1</GroupHeader>
+      <CheatEntries>
+        <CheatEntry>
+          <ID>35</ID>
+          <Description>"NPC ID"</Description>
+          <ShowAsSigned>0</ShowAsSigned>
+          <VariableType>4 Bytes</VariableType>
+          <Address>"client.exe"+003502D4</Address>
+          <Offsets>
+            <Offset>4</Offset>
+            <Offset>44</Offset>
+            <Offset>C</Offset>
+            <Offset>F0</Offset>
+            <Offset>210</Offset>
+          </Offsets>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>58</ID>
+          <Description>"X"</Description>
+          <ShowAsSigned>0</ShowAsSigned>
+          <VariableType>4 Bytes</VariableType>
+          <Address>"client.exe"+003502D4</Address>
+          <Offsets>
+            <Offset>C</Offset>
+            <Offset>44</Offset>
+            <Offset>C</Offset>
+            <Offset>F0</Offset>
+            <Offset>210</Offset>
+          </Offsets>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>37</ID>
+          <Description>"Y"</Description>
+          <ShowAsSigned>0</ShowAsSigned>
+          <VariableType>4 Bytes</VariableType>
+          <Address>"client.exe"+003502D4</Address>
+          <Offsets>
+            <Offset>10</Offset>
+            <Offset>44</Offset>
+            <Offset>C</Offset>
+            <Offset>F0</Offset>
+            <Offset>210</Offset>
+          </Offsets>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>80</ID>
+          <Description>"HP"</Description>
+          <ShowAsSigned>0</ShowAsSigned>
+          <VariableType>4 Bytes</VariableType>
+          <Address>"client.exe"+003502D4</Address>
+          <Offsets>
+            <Offset>18</Offset>
+            <Offset>44</Offset>
+            <Offset>C</Offset>
+            <Offset>F0</Offset>
+            <Offset>210</Offset>
+          </Offsets>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>81</ID>
+          <Description>"Max HP"</Description>
+          <ShowAsSigned>0</ShowAsSigned>
+          <VariableType>4 Bytes</VariableType>
+          <Address>"client.exe"+003502D4</Address>
+          <Offsets>
+            <Offset>1C</Offset>
+            <Offset>44</Offset>
+            <Offset>C</Offset>
+            <Offset>F0</Offset>
+            <Offset>210</Offset>
+          </Offsets>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>32</ID>
+          <Description>"Name"</Description>
+          <ShowAsSigned>0</ShowAsSigned>
+          <VariableType>String</VariableType>
+          <Length>20</Length>
+          <Unicode>0</Unicode>
+          <CodePage>0</CodePage>
+          <ZeroTerminate>1</ZeroTerminate>
+          <Address>"client.exe"+003502D4</Address>
+          <Offsets>
+            <Offset>10C</Offset>
+            <Offset>44</Offset>
+            <Offset>C</Offset>
+            <Offset>F0</Offset>
+            <Offset>210</Offset>
+          </Offsets>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>31</ID>
+          <Description>"Guild Tag"</Description>
+          <ShowAsSigned>0</ShowAsSigned>
+          <VariableType>String</VariableType>
+          <Length>20</Length>
+          <Unicode>0</Unicode>
+          <CodePage>0</CodePage>
+          <ZeroTerminate>1</ZeroTerminate>
+          <Address>"client.exe"+003502D4</Address>
+          <Offsets>
+            <Offset>13C</Offset>
+            <Offset>44</Offset>
+            <Offset>C</Offset>
+            <Offset>F0</Offset>
+            <Offset>210</Offset>
+          </Offsets>
+        </CheatEntry>
+      </CheatEntries>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>45</ID>
+      <Description>"Self X - 1"</Description>
+      <Options moHideChildren="1"/>
+      <LastState Value="" RealAddress="00000000"/>
+      <GroupHeader>1</GroupHeader>
+      <CheatEntries>
+        <CheatEntry>
+          <ID>46</ID>
+          <Description>"NPC ID"</Description>
+          <ShowAsSigned>0</ShowAsSigned>
+          <VariableType>4 Bytes</VariableType>
+          <Address>"client.exe"+003502D4</Address>
+          <Offsets>
+            <Offset>4</Offset>
+            <Offset>44</Offset>
+            <Offset>C</Offset>
+            <Offset>B8</Offset>
+            <Offset>210</Offset>
+          </Offsets>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>47</ID>
+          <Description>"X"</Description>
+          <ShowAsSigned>0</ShowAsSigned>
+          <VariableType>4 Bytes</VariableType>
+          <Address>"client.exe"+003502D4</Address>
+          <Offsets>
+            <Offset>C</Offset>
+            <Offset>44</Offset>
+            <Offset>C</Offset>
+            <Offset>B8</Offset>
+            <Offset>210</Offset>
+          </Offsets>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>64</ID>
+          <Description>"Y"</Description>
+          <ShowAsSigned>0</ShowAsSigned>
+          <VariableType>4 Bytes</VariableType>
+          <Address>"client.exe"+003502D4</Address>
+          <Offsets>
+            <Offset>10</Offset>
+            <Offset>44</Offset>
+            <Offset>C</Offset>
+            <Offset>B8</Offset>
+            <Offset>210</Offset>
+          </Offsets>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>78</ID>
+          <Description>"HP"</Description>
+          <ShowAsSigned>0</ShowAsSigned>
+          <VariableType>4 Bytes</VariableType>
+          <Address>"client.exe"+003502D4</Address>
+          <Offsets>
+            <Offset>18</Offset>
+            <Offset>44</Offset>
+            <Offset>C</Offset>
+            <Offset>B8</Offset>
+            <Offset>210</Offset>
+          </Offsets>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>79</ID>
+          <Description>"Max HP"</Description>
+          <ShowAsSigned>0</ShowAsSigned>
+          <VariableType>4 Bytes</VariableType>
+          <Address>"client.exe"+003502D4</Address>
+          <Offsets>
+            <Offset>1C</Offset>
+            <Offset>44</Offset>
+            <Offset>C</Offset>
+            <Offset>B8</Offset>
+            <Offset>210</Offset>
+          </Offsets>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>49</ID>
+          <Description>"Name"</Description>
+          <ShowAsSigned>0</ShowAsSigned>
+          <VariableType>String</VariableType>
+          <Length>20</Length>
+          <Unicode>0</Unicode>
+          <CodePage>0</CodePage>
+          <ZeroTerminate>1</ZeroTerminate>
+          <Address>"client.exe"+003502D4</Address>
+          <Offsets>
+            <Offset>10C</Offset>
+            <Offset>44</Offset>
+            <Offset>C</Offset>
+            <Offset>B8</Offset>
+            <Offset>210</Offset>
+          </Offsets>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>50</ID>
+          <Description>"Guild Tag"</Description>
+          <ShowAsSigned>0</ShowAsSigned>
+          <VariableType>String</VariableType>
+          <Length>20</Length>
+          <Unicode>0</Unicode>
+          <CodePage>0</CodePage>
+          <ZeroTerminate>1</ZeroTerminate>
+          <Address>"client.exe"+003502D4</Address>
+          <Offsets>
+            <Offset>13C</Offset>
+            <Offset>44</Offset>
+            <Offset>C</Offset>
+            <Offset>B8</Offset>
+            <Offset>210</Offset>
+          </Offsets>
+        </CheatEntry>
+      </CheatEntries>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>51</ID>
+      <Description>"Self X + 1"</Description>
+      <Options moHideChildren="1"/>
+      <LastState Value="" RealAddress="00000000"/>
+      <GroupHeader>1</GroupHeader>
+      <CheatEntries>
+        <CheatEntry>
+          <ID>52</ID>
+          <Description>"NPC ID"</Description>
+          <ShowAsSigned>0</ShowAsSigned>
+          <VariableType>4 Bytes</VariableType>
+          <Address>"client.exe"+003502D4</Address>
+          <Offsets>
+            <Offset>4</Offset>
+            <Offset>44</Offset>
+            <Offset>C</Offset>
+            <Offset>48</Offset>
+            <Offset>210</Offset>
+          </Offsets>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>53</ID>
+          <Description>"X"</Description>
+          <ShowAsSigned>0</ShowAsSigned>
+          <VariableType>4 Bytes</VariableType>
+          <Address>"client.exe"+003502D4</Address>
+          <Offsets>
+            <Offset>C</Offset>
+            <Offset>44</Offset>
+            <Offset>C</Offset>
+            <Offset>48</Offset>
+            <Offset>210</Offset>
+          </Offsets>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>54</ID>
+          <Description>"Y"</Description>
+          <ShowAsSigned>0</ShowAsSigned>
+          <VariableType>4 Bytes</VariableType>
+          <Address>"client.exe"+003502D4</Address>
+          <Offsets>
+            <Offset>10</Offset>
+            <Offset>44</Offset>
+            <Offset>C</Offset>
+            <Offset>48</Offset>
+            <Offset>210</Offset>
+          </Offsets>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>76</ID>
+          <Description>"HP"</Description>
+          <ShowAsSigned>0</ShowAsSigned>
+          <VariableType>4 Bytes</VariableType>
+          <Address>"client.exe"+003502D4</Address>
+          <Offsets>
+            <Offset>18</Offset>
+            <Offset>44</Offset>
+            <Offset>C</Offset>
+            <Offset>48</Offset>
+            <Offset>210</Offset>
+          </Offsets>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>77</ID>
+          <Description>"Max HP"</Description>
+          <ShowAsSigned>0</ShowAsSigned>
+          <VariableType>4 Bytes</VariableType>
+          <Address>"client.exe"+003502D4</Address>
+          <Offsets>
+            <Offset>1C</Offset>
+            <Offset>44</Offset>
+            <Offset>C</Offset>
+            <Offset>48</Offset>
+            <Offset>210</Offset>
+          </Offsets>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>55</ID>
+          <Description>"Name"</Description>
+          <ShowAsSigned>0</ShowAsSigned>
+          <VariableType>String</VariableType>
+          <Length>20</Length>
+          <Unicode>0</Unicode>
+          <CodePage>0</CodePage>
+          <ZeroTerminate>1</ZeroTerminate>
+          <Address>"client.exe"+003502D4</Address>
+          <Offsets>
+            <Offset>10C</Offset>
+            <Offset>44</Offset>
+            <Offset>C</Offset>
+            <Offset>48</Offset>
+            <Offset>210</Offset>
+          </Offsets>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>56</ID>
+          <Description>"Guild Tag"</Description>
+          <ShowAsSigned>0</ShowAsSigned>
+          <VariableType>String</VariableType>
+          <Length>20</Length>
+          <Unicode>0</Unicode>
+          <CodePage>0</CodePage>
+          <ZeroTerminate>1</ZeroTerminate>
+          <Address>"client.exe"+003502D4</Address>
+          <Offsets>
+            <Offset>13C</Offset>
+            <Offset>44</Offset>
+            <Offset>C</Offset>
+            <Offset>48</Offset>
+            <Offset>210</Offset>
+          </Offsets>
+        </CheatEntry>
+      </CheatEntries>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>59</ID>
+      <Description>"Self X - 1, Y - 1"</Description>
+      <Options moHideChildren="1"/>
+      <LastState Value="" RealAddress="00000000"/>
+      <GroupHeader>1</GroupHeader>
+      <CheatEntries>
+        <CheatEntry>
+          <ID>60</ID>
+          <Description>"NPC ID"</Description>
+          <ShowAsSigned>0</ShowAsSigned>
+          <VariableType>4 Bytes</VariableType>
+          <Address>"client.exe"+003502D4</Address>
+          <Offsets>
+            <Offset>4</Offset>
+            <Offset>44</Offset>
+            <Offset>C</Offset>
+            <Offset>14C</Offset>
+            <Offset>210</Offset>
+          </Offsets>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>61</ID>
+          <Description>"X"</Description>
+          <ShowAsSigned>0</ShowAsSigned>
+          <VariableType>4 Bytes</VariableType>
+          <Address>"client.exe"+003502D4</Address>
+          <Offsets>
+            <Offset>C</Offset>
+            <Offset>44</Offset>
+            <Offset>C</Offset>
+            <Offset>14C</Offset>
+            <Offset>210</Offset>
+          </Offsets>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>65</ID>
+          <Description>"Y"</Description>
+          <ShowAsSigned>0</ShowAsSigned>
+          <VariableType>4 Bytes</VariableType>
+          <Address>"client.exe"+003502D4</Address>
+          <Offsets>
+            <Offset>10</Offset>
+            <Offset>44</Offset>
+            <Offset>C</Offset>
+            <Offset>14C</Offset>
+            <Offset>210</Offset>
+          </Offsets>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>74</ID>
+          <Description>"HP"</Description>
+          <ShowAsSigned>0</ShowAsSigned>
+          <VariableType>4 Bytes</VariableType>
+          <Address>"client.exe"+003502D4</Address>
+          <Offsets>
+            <Offset>18</Offset>
+            <Offset>44</Offset>
+            <Offset>C</Offset>
+            <Offset>14C</Offset>
+            <Offset>210</Offset>
+          </Offsets>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>75</ID>
+          <Description>"Max HP"</Description>
+          <ShowAsSigned>0</ShowAsSigned>
+          <VariableType>4 Bytes</VariableType>
+          <Address>"client.exe"+003502D4</Address>
+          <Offsets>
+            <Offset>1C</Offset>
+            <Offset>44</Offset>
+            <Offset>C</Offset>
+            <Offset>14C</Offset>
+            <Offset>210</Offset>
+          </Offsets>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>62</ID>
+          <Description>"Name"</Description>
+          <ShowAsSigned>0</ShowAsSigned>
+          <VariableType>String</VariableType>
+          <Length>20</Length>
+          <Unicode>0</Unicode>
+          <CodePage>0</CodePage>
+          <ZeroTerminate>1</ZeroTerminate>
+          <Address>"client.exe"+003502D4</Address>
+          <Offsets>
+            <Offset>10C</Offset>
+            <Offset>44</Offset>
+            <Offset>C</Offset>
+            <Offset>14C</Offset>
+            <Offset>210</Offset>
+          </Offsets>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>63</ID>
+          <Description>"Guild Tag"</Description>
+          <ShowAsSigned>0</ShowAsSigned>
+          <VariableType>String</VariableType>
+          <Length>20</Length>
+          <Unicode>0</Unicode>
+          <CodePage>0</CodePage>
+          <ZeroTerminate>1</ZeroTerminate>
+          <Address>"client.exe"+003502D4</Address>
+          <Offsets>
+            <Offset>13C</Offset>
+            <Offset>44</Offset>
+            <Offset>C</Offset>
+            <Offset>14C</Offset>
+            <Offset>210</Offset>
+          </Offsets>
+        </CheatEntry>
+      </CheatEntries>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>66</ID>
+      <Description>"Self X - 1, Y + 1"</Description>
+      <Options moHideChildren="1"/>
+      <LastState Value="" RealAddress="00000000"/>
+      <GroupHeader>1</GroupHeader>
+      <CheatEntries>
+        <CheatEntry>
+          <ID>67</ID>
+          <Description>"NPC ID"</Description>
+          <ShowAsSigned>0</ShowAsSigned>
+          <VariableType>4 Bytes</VariableType>
+          <Address>"client.exe"+003502D4</Address>
+          <Offsets>
+            <Offset>4</Offset>
+            <Offset>44</Offset>
+            <Offset>C</Offset>
+            <Offset>2C</Offset>
+            <Offset>210</Offset>
+          </Offsets>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>68</ID>
+          <Description>"X"</Description>
+          <ShowAsSigned>0</ShowAsSigned>
+          <VariableType>4 Bytes</VariableType>
+          <Address>"client.exe"+003502D4</Address>
+          <Offsets>
+            <Offset>C</Offset>
+            <Offset>44</Offset>
+            <Offset>C</Offset>
+            <Offset>2C</Offset>
+            <Offset>210</Offset>
+          </Offsets>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>69</ID>
+          <Description>"Y"</Description>
+          <ShowAsSigned>0</ShowAsSigned>
+          <VariableType>4 Bytes</VariableType>
+          <Address>"client.exe"+003502D4</Address>
+          <Offsets>
+            <Offset>10</Offset>
+            <Offset>44</Offset>
+            <Offset>C</Offset>
+            <Offset>2C</Offset>
+            <Offset>210</Offset>
+          </Offsets>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>72</ID>
+          <Description>"HP"</Description>
+          <ShowAsSigned>0</ShowAsSigned>
+          <VariableType>4 Bytes</VariableType>
+          <Address>"client.exe"+003502D4</Address>
+          <Offsets>
+            <Offset>18</Offset>
+            <Offset>44</Offset>
+            <Offset>C</Offset>
+            <Offset>2C</Offset>
+            <Offset>210</Offset>
+          </Offsets>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>73</ID>
+          <Description>"Max HP"</Description>
+          <ShowAsSigned>0</ShowAsSigned>
+          <VariableType>4 Bytes</VariableType>
+          <Address>"client.exe"+003502D4</Address>
+          <Offsets>
+            <Offset>1C</Offset>
+            <Offset>44</Offset>
+            <Offset>C</Offset>
+            <Offset>2C</Offset>
+            <Offset>210</Offset>
+          </Offsets>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>70</ID>
+          <Description>"Name"</Description>
+          <ShowAsSigned>0</ShowAsSigned>
+          <VariableType>String</VariableType>
+          <Length>20</Length>
+          <Unicode>0</Unicode>
+          <CodePage>0</CodePage>
+          <ZeroTerminate>1</ZeroTerminate>
+          <Address>"client.exe"+003502D4</Address>
+          <Offsets>
+            <Offset>10C</Offset>
+            <Offset>44</Offset>
+            <Offset>C</Offset>
+            <Offset>2C</Offset>
+            <Offset>210</Offset>
+          </Offsets>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>71</ID>
+          <Description>"Guild Tag"</Description>
+          <ShowAsSigned>0</ShowAsSigned>
+          <VariableType>String</VariableType>
+          <Length>20</Length>
+          <Unicode>0</Unicode>
+          <CodePage>0</CodePage>
+          <ZeroTerminate>1</ZeroTerminate>
+          <Address>"client.exe"+003502D4</Address>
+          <Offsets>
+            <Offset>13C</Offset>
+            <Offset>44</Offset>
+            <Offset>C</Offset>
+            <Offset>2C</Offset>
+            <Offset>210</Offset>
+          </Offsets>
+        </CheatEntry>
+      </CheatEntries>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>84</ID>
+      <Description>"Self X + 1, Y - 1"</Description>
+      <Options moHideChildren="1"/>
+      <LastState Value="" RealAddress="00000000"/>
+      <GroupHeader>1</GroupHeader>
+      <CheatEntries>
+        <CheatEntry>
+          <ID>85</ID>
+          <Description>"NPC ID"</Description>
+          <ShowAsSigned>0</ShowAsSigned>
+          <VariableType>4 Bytes</VariableType>
+          <Address>"client.exe"+003502D4</Address>
+          <Offsets>
+            <Offset>4</Offset>
+            <Offset>44</Offset>
+            <Offset>C</Offset>
+            <Offset>DC</Offset>
+            <Offset>210</Offset>
+          </Offsets>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>86</ID>
+          <Description>"X"</Description>
+          <ShowAsSigned>0</ShowAsSigned>
+          <VariableType>4 Bytes</VariableType>
+          <Address>"client.exe"+003502D4</Address>
+          <Offsets>
+            <Offset>C</Offset>
+            <Offset>44</Offset>
+            <Offset>C</Offset>
+            <Offset>DC</Offset>
+            <Offset>210</Offset>
+          </Offsets>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>87</ID>
+          <Description>"Y"</Description>
+          <ShowAsSigned>0</ShowAsSigned>
+          <VariableType>4 Bytes</VariableType>
+          <Address>"client.exe"+003502D4</Address>
+          <Offsets>
+            <Offset>10</Offset>
+            <Offset>44</Offset>
+            <Offset>C</Offset>
+            <Offset>DC</Offset>
+            <Offset>210</Offset>
+          </Offsets>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>88</ID>
+          <Description>"HP"</Description>
+          <ShowAsSigned>0</ShowAsSigned>
+          <VariableType>4 Bytes</VariableType>
+          <Address>"client.exe"+003502D4</Address>
+          <Offsets>
+            <Offset>18</Offset>
+            <Offset>44</Offset>
+            <Offset>C</Offset>
+            <Offset>DC</Offset>
+            <Offset>210</Offset>
+          </Offsets>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>89</ID>
+          <Description>"Max HP"</Description>
+          <ShowAsSigned>0</ShowAsSigned>
+          <VariableType>4 Bytes</VariableType>
+          <Address>"client.exe"+003502D4</Address>
+          <Offsets>
+            <Offset>1C</Offset>
+            <Offset>44</Offset>
+            <Offset>C</Offset>
+            <Offset>DC</Offset>
+            <Offset>210</Offset>
+          </Offsets>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>90</ID>
+          <Description>"Name"</Description>
+          <ShowAsSigned>0</ShowAsSigned>
+          <VariableType>String</VariableType>
+          <Length>20</Length>
+          <Unicode>0</Unicode>
+          <CodePage>0</CodePage>
+          <ZeroTerminate>1</ZeroTerminate>
+          <Address>"client.exe"+003502D4</Address>
+          <Offsets>
+            <Offset>10C</Offset>
+            <Offset>44</Offset>
+            <Offset>C</Offset>
+            <Offset>DC</Offset>
+            <Offset>210</Offset>
+          </Offsets>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>91</ID>
+          <Description>"Guild Tag"</Description>
+          <ShowAsSigned>0</ShowAsSigned>
+          <VariableType>String</VariableType>
+          <Length>20</Length>
+          <Unicode>0</Unicode>
+          <CodePage>0</CodePage>
+          <ZeroTerminate>1</ZeroTerminate>
+          <Address>"client.exe"+003502D4</Address>
+          <Offsets>
+            <Offset>13C</Offset>
+            <Offset>44</Offset>
+            <Offset>C</Offset>
+            <Offset>DC</Offset>
+            <Offset>210</Offset>
+          </Offsets>
+        </CheatEntry>
+      </CheatEntries>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>92</ID>
+      <Description>"Self X + 1, Y + 1"</Description>
+      <Options moHideChildren="1"/>
+      <LastState Value="" RealAddress="00000000"/>
+      <GroupHeader>1</GroupHeader>
+      <CheatEntries>
+        <CheatEntry>
+          <ID>93</ID>
+          <Description>"NPC ID"</Description>
+          <ShowAsSigned>0</ShowAsSigned>
+          <VariableType>4 Bytes</VariableType>
+          <Address>"client.exe"+003502D4</Address>
+          <Offsets>
+            <Offset>4</Offset>
+            <Offset>44</Offset>
+            <Offset>C</Offset>
+            <Offset>1B8</Offset>
+            <Offset>210</Offset>
+          </Offsets>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>94</ID>
+          <Description>"X"</Description>
+          <ShowAsSigned>0</ShowAsSigned>
+          <VariableType>4 Bytes</VariableType>
+          <Address>"client.exe"+003502D4</Address>
+          <Offsets>
+            <Offset>C</Offset>
+            <Offset>44</Offset>
+            <Offset>C</Offset>
+            <Offset>1B8</Offset>
+            <Offset>210</Offset>
+          </Offsets>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>95</ID>
+          <Description>"Y"</Description>
+          <ShowAsSigned>0</ShowAsSigned>
+          <VariableType>4 Bytes</VariableType>
+          <Address>"client.exe"+003502D4</Address>
+          <Offsets>
+            <Offset>10</Offset>
+            <Offset>44</Offset>
+            <Offset>C</Offset>
+            <Offset>1B8</Offset>
+            <Offset>210</Offset>
+          </Offsets>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>96</ID>
+          <Description>"HP"</Description>
+          <ShowAsSigned>0</ShowAsSigned>
+          <VariableType>4 Bytes</VariableType>
+          <Address>"client.exe"+003502D4</Address>
+          <Offsets>
+            <Offset>18</Offset>
+            <Offset>44</Offset>
+            <Offset>C</Offset>
+            <Offset>1B8</Offset>
+            <Offset>210</Offset>
+          </Offsets>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>97</ID>
+          <Description>"Max HP"</Description>
+          <ShowAsSigned>0</ShowAsSigned>
+          <VariableType>4 Bytes</VariableType>
+          <Address>"client.exe"+003502D4</Address>
+          <Offsets>
+            <Offset>1C</Offset>
+            <Offset>44</Offset>
+            <Offset>C</Offset>
+            <Offset>1B8</Offset>
+            <Offset>210</Offset>
+          </Offsets>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>98</ID>
+          <Description>"Name"</Description>
+          <ShowAsSigned>0</ShowAsSigned>
+          <VariableType>String</VariableType>
+          <Length>20</Length>
+          <Unicode>0</Unicode>
+          <CodePage>0</CodePage>
+          <ZeroTerminate>1</ZeroTerminate>
+          <Address>"client.exe"+003502D4</Address>
+          <Offsets>
+            <Offset>10C</Offset>
+            <Offset>44</Offset>
+            <Offset>C</Offset>
+            <Offset>1B8</Offset>
+            <Offset>210</Offset>
+          </Offsets>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>99</ID>
+          <Description>"Guild Tag"</Description>
+          <ShowAsSigned>0</ShowAsSigned>
+          <VariableType>String</VariableType>
+          <Length>20</Length>
+          <Unicode>0</Unicode>
+          <CodePage>0</CodePage>
+          <ZeroTerminate>1</ZeroTerminate>
+          <Address>"client.exe"+003502D4</Address>
+          <Offsets>
+            <Offset>13C</Offset>
+            <Offset>44</Offset>
+            <Offset>C</Offset>
+            <Offset>1B8</Offset>
+            <Offset>210</Offset>
+          </Offsets>
+        </CheatEntry>
+      </CheatEntries>
+    </CheatEntry>
+  </CheatEntries>
+</CheatTable>

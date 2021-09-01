@@ -3,16 +3,17 @@ import keyboard
 import threading
 
 import utils.logic as logic
-from utils.queue import ConsumerThread
+from utils.queue import LoggerThread, ConsumerThread
 
 
-class BotThread(threading.Thread):
-    state: str = 'paused'
+class HealerThread(threading.Thread):
+    state: str = 0
     consts = None
     memory = None
     ocr = None
     vision = None
     controller = None
+    loggerQ: LoggerThread = None
     workerQ: ConsumerThread = None
     partyQ: ConsumerThread = None
     process_found: bool = False
@@ -25,15 +26,18 @@ class BotThread(threading.Thread):
 
     def __init__(self, group=None, target=None, name=None,
                  args=(), kwargs=None, verbose=None):
-        super(BotThread, self).__init__()
+        super(HealerThread, self).__init__()
         self.target = target
         self.name = name
-        self.state = 'paused'
+        self.state = 0
         self.consts = kwargs['consts']
         self.memory = kwargs['memory']
         self.ocr = kwargs['ocr']
         self.vision = kwargs['vision']
         self.controller = kwargs['controller']
+        self.loggerQ = LoggerThread()
+        self.loggerQ.setDaemon(True)
+        self.loggerQ.start()
         self.workerQ = ConsumerThread(kwargs={'bot': self})
         self.workerQ.setDaemon(True)
         self.workerQ.start()
@@ -53,19 +57,19 @@ class BotThread(threading.Thread):
         keyboard.add_hotkey('ctrl+n', self.checkMouseNPCId)
 
     def log(self, text):
-        print('(%s) %s' % (time.strftime('%H:%M:%S'), text))
+        self.loggerQ.add(text)
 
     def setState(self, state):
-        if not self.state == 'paused':
+        if not self.state == 0:
             self.state = state
 
     def toggle_pause(self):
-        if self.state == 'paused':
-            self.state = 'running'
-            self.log('[Bot] Un-paused')
+        if self.state == 0:
+            self.state = 1
+            self.log('[Healer] Un-paused')
         else:
-            self.state = 'paused'
-            self.log('[Bot] Paused')
+            self.state = 0
+            self.log('[Healer] Paused')
         time.sleep(0.500)
 
     def checkGame(self):
@@ -87,7 +91,7 @@ class BotThread(threading.Thread):
         healthPercentage = logic.getMissingHealthPercentage(
             self.memory)
         if healthPercentage < 100:
-            self.log(f'[Bot] Health: {healthPercentage}%')
+            self.log(f'[Healer] Health: {healthPercentage}%')
 
         if healthPercentage < 98:
             newPoisonDisease = self.memory.GetPoisonDisease()
@@ -107,7 +111,7 @@ class BotThread(threading.Thread):
     def checkOwnStamina(self):
         ownStamina = self.memory.GetStamina()
         if ownStamina < 100:
-            self.log(f'[Bot] Stamina: {ownStamina}')
+            self.log(f'[Healer] Stamina: {ownStamina}')
 
         if ownStamina < 40:
             self.workerQ.add('useStaminaPotion')
@@ -116,7 +120,7 @@ class BotThread(threading.Thread):
         partyCount = self.memory.GetPartyCount()
         # Party count changed, update count and take new images
         if partyCount != self.last_party_count:
-            self.log(f'[Bot] Party Member Count: [{partyCount}]')
+            self.log(f'[Healer] Party Member Count: [{partyCount}]')
             self.last_party_count = partyCount
             self.partyQ.add('getPartyMembersData')
         elif partyCount > 0:
@@ -128,17 +132,17 @@ class BotThread(threading.Thread):
 
     def checkMouseNPCId(self):
         npcID = self.memory.GetMouseNPCId()
-        self.log(f'[Bot] GetMouseNPCId: {npcID}')
+        self.log(f'[Healer] GetMouseNPCId: {npcID}')
 
     def checkSystemMessage(self):
         message = self.memory.CheckSystemMessage()
         if message != '' and message != 0:
-            self.log(f'[Bot] CheckSystemMessage: {message}')
+            self.log(f'[Healer] CheckSystemMessage: {message}')
 
     def checkGuildMessage(self):
         message = self.memory.GetGuildMessage()
         if message != '' and message != 0:
-            self.log(f'[Bot] GetGuildMessage: {message}')
+            self.log(f'[Healer] GetGuildMessage: {message}')
 
     def checkTotemsAndFood(self):
         chatLogs = logic.getLastChannelLogs('Say', 10)
@@ -161,16 +165,16 @@ class BotThread(threading.Thread):
             self.workerQ.add('useWerewolfTotem')
 
     def run(self):
-        self.log('[Bot] Started! press [pause] to toggle pause/un-pause')
+        self.log('[Healer] Started! press [pause] to toggle pause/un-pause')
         _tick = 0
 
         while True:
-            # threading.Thread(target=self.checkGuildMessage).start()
-            if self.state == 'running':
+            if self.state == 1:
                 self.checkGame()
                 if self.process_found:
                     _tick += 1
                     threading.Thread(target=self.checkSystemMessage).start()
+                    # threading.Thread(target=self.checkGuildMessage).start()
                     if (_tick % 2) == 0:
                         threading.Thread(target=self.checkPartyHeals).start()
                     else:
@@ -184,7 +188,7 @@ class BotThread(threading.Thread):
                         #    target=self.checkTotemsAndFood).start()
                         _tick = 0
                 else:
-                    self.log('[Bot] Game Process not found!')
-                    self.log('[Bot] Waiting...')
+                    self.log('[Healer] Game Process not found!')
+                    self.log('[Healer] Waiting...')
                     time.sleep(30)
             time.sleep(0.250)
