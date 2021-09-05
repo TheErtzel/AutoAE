@@ -2,27 +2,27 @@ import time
 import keyboard
 import threading
 
+import utils.ocr as OCR
 import utils.logic as logic
 from utils.queue import LoggerThread, ConsumerThread
 
 
 class HealerThread(threading.Thread):
     state: str = 0
-    consts = None
-    memory = None
-    ocr = None
+    ocr = OCR
     vision = None
     controller = None
     loggerQ: LoggerThread = None
     workerQ: ConsumerThread = None
     partyQ: ConsumerThread = None
+    entityQ: ConsumerThread = None
     process_found: bool = False
     usedSpell: bool = False
     cog_timeout: bool = False
     last_poison_disease: int = 0
-    party_members_data = []
+    party_member_ids = []
+    entities_on_screen = []
     party_members_on_screen = []
-    active_party_member_name: str = ''
 
     def __init__(self, group=None, target=None, name=None,
                  args=(), kwargs=None, verbose=None):
@@ -30,9 +30,7 @@ class HealerThread(threading.Thread):
         self.target = target
         self.name = name
         self.state = 0
-        self.consts = kwargs['consts']
-        self.memory = kwargs['memory']
-        self.ocr = kwargs['ocr']
+        self.ocr = OCR
         self.vision = kwargs['vision']
         self.controller = kwargs['controller']
         self.loggerQ = LoggerThread()
@@ -44,14 +42,17 @@ class HealerThread(threading.Thread):
         self.partyQ = ConsumerThread(kwargs={'bot': self})
         self.partyQ.setDaemon(True)
         self.partyQ.start()
+        self.entityQ = ConsumerThread(kwargs={'bot': self})
+        self.entityQ.setDaemon(True)
+        self.entityQ.start()
         self.process_found = False
         self.usedSpell = False
         self.cog_timeout = False
         self.last_poison_disease = 0
         self.last_party_count = 0
-        self.party_members_data = []
+        self.party_member_ids = []
+        self.entities_on_screen = []
         self.party_members_on_screen = []
-        self.active_party_member_name = ''
 
         keyboard.add_hotkey('pause', self.toggle_pause)
         keyboard.add_hotkey('ctrl+n', self.checkMouseNPCId)
@@ -88,8 +89,7 @@ class HealerThread(threading.Thread):
         self.cog_timeout = False
 
     def checkOwnHealth(self):
-        healthPercentage = logic.getMissingHealthPercentage(
-            self.memory)
+        healthPercentage = logic.getMissingHealthPercentage()
         if healthPercentage < 100:
             self.log(f'[Healer] Health: {healthPercentage}%')
 
@@ -122,13 +122,16 @@ class HealerThread(threading.Thread):
         if partyCount != self.last_party_count:
             self.log(f'[Healer] Party Member Count: [{partyCount}]')
             self.last_party_count = partyCount
-            self.partyQ.add('getPartyMembersData')
-        elif partyCount > 0:
-            self.partyQ.add('updatePartyMembersData')
+            self.partyQ.add('getPartyMembersIds')
+        else:
+            self.partyQ.add('getPartyMembersOnScreen')
 
     def checkPartyHeals(self):
         if self.memory.GetPartyCount() > 1:
             self.workerQ.add('getPartyMemberToHeal')
+
+    def checkEntitiesOnScreen(self):
+        self.entityQ.add('getEntitiesOnScreen')
 
     def checkMouseNPCId(self):
         npcID = self.memory.GetMouseNPCId()
@@ -175,6 +178,7 @@ class HealerThread(threading.Thread):
                     _tick += 1
                     threading.Thread(target=self.checkSystemMessage).start()
                     # threading.Thread(target=self.checkGuildMessage).start()
+                    threading.Thread(target=self.checkEntitiesOnScreen).start()
                     if (_tick % 2) == 0:
                         threading.Thread(target=self.checkPartyHeals).start()
                     else:

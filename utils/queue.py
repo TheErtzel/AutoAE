@@ -31,7 +31,7 @@ class LoggerThread(threading.Thread):
             except Exception as err:
                 self.add(f'[LoggerQueue] {traceback.format_exc()}')
 
-    def add(self, text):
+    def add(self, text: str):
         if not text in self._q:
             self._q.append(text)
 
@@ -63,7 +63,7 @@ class ConsumerThread(threading.Thread):
             except Exception as err:
                 self.bot.log(f'[ConsumerQueue] {traceback.format_exc()}')
 
-    def add(self, name):
+    def add(self, name: str):
         if self.bot.state == 0 or self.bot.state == 'shutdown':
             return
 
@@ -71,35 +71,35 @@ class ConsumerThread(threading.Thread):
             self.bot.log(f'[ConsumerQueue] added: {name}')
             self._q.append(name)
 
-    def _process(self, name=''):
+    def _process(self, name: str = ''):
         self.processing = True
         self.bot.log(f'[ConsumerQueue] processing: {name}')
         if name == 'useHealingPotion':
-            logic.useHealingPotion(self.bot)
+            logic.useHealingPotion()
         elif name == 'useHealingSpell':
             logic.useHealingSpell(self.bot)
         elif name == 'useCallOfTheGodsSpell':
             logic.useCallOfTheGodsSpell(self.bot)
         elif name == 'useStaminaPotion':
-            logic.useStaminaPotion(self.bot)
-        elif name == 'getPartyMembersData':
-            logic.getPartyMembersData(self.bot)
-        elif name == 'updatePartyMembersData':
-            logic.updatePartyMembersData(self.bot)
+            logic.useStaminaPotion()
+        elif name == 'getPartyMembersIds':
+            logic.getPartyMembersIds(self.bot)
+        elif name == 'getEntitiesOnScreen':
+            logic.getEntitiesOnScreen(self.bot)
         elif name == 'getPartyMemberToHeal':
             logic.getPartyMemberToHeal(self.bot)
-        elif name == 'getPartyOnScreen':
-            logic.getPartyOnScreen(self.bot)
+        elif name == 'getPartyMembersOnScreen':
+            logic.getPartyMembersOnScreen(self.bot)
         elif name == 'getNewTarget':
             logic.getNewTarget(self.bot)
         elif name == 'useFood':
-            logic.useFood(self.bot)
+            logic.useFood()
         elif name == 'useRegenerationTotem':
-            logic.useRegenerationTotem(self.bot)
+            logic.useRegenerationTotem()
         elif name == 'useClassTotem':
-            logic.useClassTotem(self.bot)
+            logic.useClassTotem()
         elif name == 'useWerewolfTotem':
-            logic.useWerewolfTotem(self.bot)
+            logic.useWerewolfTotem()
         elif name == 'checkRunes':
             logic.checkRunes(self.bot)
         else:

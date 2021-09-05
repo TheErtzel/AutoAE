@@ -1,17 +1,31 @@
-import random
+import win32api
+import win32con
+import win32gui
 import os
 import time
 import glob
-import traceback
 import pyautogui
 import numpy as np
 from PIL import ImageGrab
 from collections import Counter
+from typing import Union, List, Tuple
 
 from tkinter import *
 
+import utils.constants as consts
+import utils.memory as memory
+import utils.window as window
 
-def bubbleSort(arr, ind=6):
+
+def sendText(msg):
+    for hwnd in window.find_windows('Ashen Empires'):
+        for c in msg:
+            # loops through msg and sends each keystroke - ord() converts the given character to its ascii code
+            win32api.SendMessage(hwnd, win32con.WM_CHAR, ord(c), 0)
+            time.sleep(0.05)
+
+
+def bubbleSort(arr: List[str], ind: int = 6):
     """Bubble sort arr based upon subelement ind (default of index 6)
        which is 7th element of sub-array since 0 based indexing"""
     n = len(arr)
@@ -30,15 +44,41 @@ def bubbleSort(arr, ind=6):
     return arr
 
 
-def sort_Tuple(tup, sortBy=1):
+def sort_Tuple(tup: Tuple, sortBy: int = 1):
     return(sorted(tup, key=lambda x: x[sortBy]))
 
 
-def shared_chars(s1, s2):
+def shared_chars(s1: str, s2: str):
     return sum((Counter(s1) & Counter(s2)).values())
 
 
-def compare_strings(source, text):
+def filter(source, key):
+    found = []
+    result = []
+    for element in source:
+        unique = element[key]
+        if not unique in found:
+            found.append(unique)
+            result.append(element)
+    return result
+
+
+def flatten(source, key):
+    result = []
+    for element in source:
+        result.append(element[key])
+    return result
+
+
+def hexRange(start=0x0, stop=0x4, step=0x04):
+    hexCodes = []
+    while start < stop:
+        hexCodes.append(start)
+        start += step
+    return hexCodes
+
+
+def compare_strings(source: str, text: str):
     shared = shared_chars(source, text)
     out_of = len(source)
     if len(text) > out_of:
@@ -47,8 +87,8 @@ def compare_strings(source, text):
     return [shared, percentage]
 
 
-def getLastLogs(amount):
-    path = r'C:\Program Files (x86)\Pixel Mine\Ashen Empires\data\User_Data\*.log'
+def getLastLogs(amount: int):
+    path = f'{consts.AE_DIR}data\\User_Data\\*.log'
     files = glob.glob(path)
     lastestFile = max(files, key=os.path.getctime)
     lastLines = []
@@ -60,7 +100,7 @@ def getLastLogs(amount):
         return lastLines
 
 
-def getLastChannelLogs(channel, amount):
+def getLastChannelLogs(channel: str, amount: int):
     logs = getLastLogs(0)
     systemLogs = []
     for log in logs:
@@ -72,7 +112,7 @@ def getLastChannelLogs(channel, amount):
         return systemLogs
 
 
-def checkLogsForMessage(chatLogs=[], text='fizzled.', textOpposite=''):
+def checkLogsForMessage(chatLogs: List[str] = [], text: str = 'fizzled.', textOpposite: str = ''):
     # return [text for chatLog in chatLogs if text in chatLog]
     textFound = False
     for log in chatLogs:
@@ -83,159 +123,96 @@ def checkLogsForMessage(chatLogs=[], text='fizzled.', textOpposite=''):
     return textFound
 
 
-def checkForChannelMessage(channel='System', text='fizzled.', amount=5):
+def checkForChannelMessage(channel: str = 'System', text: str = 'fizzled.', amount: int = 5):
     chatLogs = getLastChannelLogs(channel, amount)
     return [text for chatLog in chatLogs if text in chatLog]
 
 
-def checkForComatMessage(text='fizzled.'):
+def checkForComatMessage(text: str = 'fizzled.'):
     chatLogs = getLastChannelLogs('Combat/Magic', 3)
     return [text for chatLog in chatLogs if text in chatLog]
 
 
-def getSelfFromParty(bot):
-    result = None
-    if len(bot.party_members_data) > 0:
-        for partyMember in bot.party_members_data:
-            if partyMember['name'] == 'Night Elf Male' or partyMember['name'] == 'Human Male':
-                result = partyMember
-                break
-    return result
+def checkSpellResult():
+    chatLogs = getLastChannelLogs('Combat/Magic', 1)
+    checkline = str(chatLogs[0])
+    if 'You have cast' in checkline:
+        return 1
+    elif 'already has' in checkline:
+        return 2
+    elif 'fizzled' in checkline:
+        return 3
+    elif 'is too far away' in checkline:
+        return 4
+    else:
+        return 0
 
 
-def getSelfIndex(bot):
-    index = None
-    if len(bot.party_members_data) > 0:
-        for partyMember in bot.party_members_data:
-            if partyMember['name'] == 'Night Elf Male' or partyMember['name'] == 'Human Male':
-                index = partyMember['index']
-                break
-    return index
+def checkAttackResult():
+    chatLogs = getLastChannelLogs('Combat/Magic', 1)
+    checkline = str(chatLogs[0])
+    if 'You hit' in checkline:
+        return 1
+    elif 'is out of range' in checkline:
+        return 2
+    elif 'is too far away' in checkline:
+        return 3
+    else:
+        return 0
 
 
-def getOnScreenLocation(bot, targetIndex):
-    try:
-        result = (None, None)
-        selfIndex = getSelfIndex(bot)
-        if selfIndex == None:
-            return result
-        selfCoords = bot.memory.GetPartyMemberLocation(selfIndex)
-        if selfCoords[0] == None:
-            return result
-        targetCoords = bot.memory.GetPartyMemberLocation(targetIndex)
-        if targetCoords[0] == None:
-            return result
+def getDistanceApart(sourceCoords: Tuple[Union[int, None]], targetCoords: Tuple[Union[int, None]]):
+    xOffset = abs(targetCoords[0] - sourceCoords[0])
+    yOffset = abs(targetCoords[1] - sourceCoords[1])
 
-        # return none if character is on a different Z access
-        if selfCoords[2] != targetCoords[2]:
-            return result
+    if targetCoords[0] < sourceCoords[0]:
+        xOffset = -abs(xOffset)
+    if targetCoords[1] < sourceCoords[1]:
+        yOffset = -abs(yOffset)
 
-        xOffset = abs(targetCoords[0] - selfCoords[0])
-        yOffset = abs(targetCoords[1] - selfCoords[1])
-
-        if xOffset < bot.consts.MIN_ONSCREEN_COORDS[0]:
-            return result
-        if yOffset < bot.consts.MIN_ONSCREEN_COORDS[1]:
-            return result
-        if xOffset > bot.consts.MAX_ONSCREEN_COORDS[0]:
-            return result
-        if yOffset > bot.consts.MAX_ONSCREEN_COORDS[1]:
-            return result
-
-        x = bot.consts.SELF_ONSCREEN_COORDS[0]
-        y = bot.consts.SELF_ONSCREEN_COORDS[1]
-
-        if targetCoords[0] > selfCoords[0]:
-            x += (xOffset / 38)
-        elif targetCoords[0] < selfCoords[0]:
-            x -= (xOffset / 38)
-
-        if targetCoords[1] > selfCoords[1]:
-            # if our target is lower then us, target higher up on them
-            y += (yOffset / 38) - 20
-        elif targetCoords[1] < selfCoords[1]:
-            # if our target is higher then us, target lower down on them
-            y -= (yOffset / 38) + 20
-
-        result = (x, y)
-    except Exception as e:
-        bot.log(f'[Logic] {traceback.format_exc()}')
-    finally:
-        return result
+    return (xOffset, yOffset)
 
 
-def getDistanceApart(bot, sourceCoords, targetCoords):
-    try:
-        result = (0, 0)
-        # return none if character is on a different Z access
-        if sourceCoords[2] != targetCoords[2]:
-            return result
+def clickLocation(bot, x: int, y: int, offset: List[int] = [48, 55]):
+    if x == None or y == None:
+        return
+    x += offset[0]
+    y += offset[1]
 
-        xOffset = abs(targetCoords[0] - sourceCoords[0])
-        yOffset = abs(targetCoords[1] - sourceCoords[1])
-
-        if xOffset < bot.consts.MIN_ONSCREEN_COORDS[0]:
-            return result
-        if yOffset < bot.consts.MIN_ONSCREEN_COORDS[1]:
-            return result
-        if xOffset > bot.consts.MAX_ONSCREEN_COORDS[0]:
-            return result
-        if yOffset > bot.consts.MAX_ONSCREEN_COORDS[1]:
-            return result
-
-        if targetCoords[0] < sourceCoords[0]:
-            xOffset = -abs(xOffset)
-        if targetCoords[1] < sourceCoords[1]:
-            yOffset = -abs(yOffset)
-
-        result = (xOffset, yOffset)
-    except Exception as e:
-        bot.log(f'[Logic] {traceback.format_exc()}')
-    finally:
-        return result
+    bot.controller.move_mouse(x, y)
+    time.sleep(0.250)
+    bot.controller.left_mouse_click(x, y)
+    time.sleep(0.250)
 
 
-def clickLocation(bot, x, y, offset=[48, 55]):
-    if x != None and y != None:
-        x += offset[0]
-        y += offset[1]
-
-        bot.controller.move_mouse(x, y)
-        time.sleep(0.250)
-        bot.controller.left_mouse_click(x, y)
-        time.sleep(0.250)
-
-
-def foundNpcIdAtPosition(bot, npcID, x, y):
+def foundNpcIdAtPosition(bot, npcID: int, x: int, y: int):
     bot.controller.move_mouse(x, y, False)
-    if bot.memory.GetMouseNPCId() == npcID:
+    if memory.GetMouseNPCId() == npcID:
         return True
     return False
 
 
-def generateNpcRange(bot, baseX, baseY, TILE_SIZE):
+def generateNpcRange(baseX: int, baseY: int):
     npcRange = [(baseX, baseY)]
-    try:
-        for x in range(5):
-            for y in range(5):
-                npcRange.append(
-                    (baseX - (x * TILE_SIZE), baseY + (y * TILE_SIZE)))
-            for y in range(5):
-                npcRange.append(
-                    (baseX + (x * TILE_SIZE), baseY + (y * TILE_SIZE)))
-            for y in range(5):
-                npcRange.append(
-                    (baseX - (x * TILE_SIZE), baseY - (y * TILE_SIZE)))
-            for y in range(5):
-                npcRange.append(
-                    (baseX + (x * TILE_SIZE), baseY - (y * TILE_SIZE)))
-    except Exception as e:
-        bot.log(f'[Logic] {traceback.format_exc()}')
-    finally:
-        return npcRange
+    tileWidth = consts.TILE_SIZE[0]
+    tileHeight = consts.TILE_SIZE[1]
+    for x in range(5):
+        for y in range(5):
+            npcRange.append(
+                (baseX - (x * tileWidth), baseY + (y * tileHeight)))
+        for y in range(5):
+            npcRange.append(
+                (baseX + (x * tileWidth), baseY + (y * tileHeight)))
+        for y in range(5):
+            npcRange.append(
+                (baseX - (x * tileWidth), baseY - (y * tileHeight)))
+        for y in range(5):
+            npcRange.append(
+                (baseX + (x * tileWidth), baseY - (y * tileHeight)))
+    return npcRange
 
 
-def clickNpcID(bot, npcID, baseX, baseY, offset=[0, 0]):
+def clickNpcID(bot, npcID: int, baseX: int, baseY: int, offset: List[int] = [0, 0]):
     if baseX != None and baseY != None:
         foundID = False
         bot.log(
@@ -250,7 +227,7 @@ def clickNpcID(bot, npcID, baseX, baseY, offset=[0, 0]):
 
         if not foundID:
             npcRange = sort_Tuple(generateNpcRange(
-                bot, baseX, baseY, bot.consts.TILE_SIZE), 1)
+                bot, baseX, baseY), 1)
             for nr in npcRange:
                 if foundNpcIdAtPosition(bot, npcID, nr[0] + offset[0], nr[1] + offset[1]):
                     foundID = True
@@ -262,114 +239,42 @@ def clickNpcID(bot, npcID, baseX, baseY, offset=[0, 0]):
             time.sleep(0.250)
 
 
-def canSeeObject(bot, template, threshold=0.9):
-    try:
-        matches = bot.vision.find_template(template, threshold=threshold)
-        return np.shape(matches)[1] >= 1
-    except:
-        return False
-
-
-def clickTemplate(bot, template, threshold=0.6, offset=[0, 0]):
-    try:
-        matches = bot.vision.find_template(template, threshold=threshold)
-
-        if np.shape(matches)[1] >= 1:
-            clickLocation(bot, matches[0][1], matches[0][1], offset=offset)
-            time.sleep(0.250)
-    finally:
-        bot.vision.refresh_frame()
-
-
 def clickSelf(bot):
-    selfCoords = bot.consts.SELF_COORDS
+    selfCoords = consts.SELF_COORDS
     if selfCoords[0] != None:
         clickLocation(bot, selfCoords[0], selfCoords[1], offset=[0, 0])
 
 
-def foundImage(bot, image, scales=[1.0, 0.9, 1.1]):
-    bot.vision.refresh_frame(bot.consts.GAME_REGION)
-    canSeeObject = False
-    try:
-        bot.vision.refresh_frame(bot.consts.GAME_REGION)
-        matches = bot.vision.scaled_find_image(
-            source=image, threshold=0.6, scales=scales)
-
-        canSeeObject = np.shape(matches)[1] >= 1
-    finally:
-        bot.vision.refresh_frame()
-        return canSeeObject
-
-
-def findSelfOnScreen(bot):
-    selfOnScreen = None
-
-    bot.log('[Logic] Checking for own character on-screen...')
-    if len(bot.party_members_data) > 0:
-        for partyMember in bot.party_members_data:
-            if partyMember['name'] == 'Night Elf Male' or partyMember['name'] == 'Human Male':
-                partyMemberCoords = getOnScreenLocation(
-                    bot, partyMember['index'])
-                if partyMemberCoords[0] != None:
-                    selfOnScreen = partyMember
-
-    if selfOnScreen != None:
-        bot.log(
-            f'[Logic] Own character ({selfOnScreen["name"]}) detected on screen')
-
-    return selfOnScreen
-
-
-def findPartyMembersOnScreen(bot):
-    partyMembersOnScreen = []
-
-    bot.log('[Logic] Checking for party members on-screen...')
-    if len(bot.party_members_data) > 0:
-        for partyMember in bot.party_members_data:
-            if partyMember['name'] == 'Night Elf Male' or partyMember['name'] == 'Human Male':
-                continue
-
-            partyMemberCoords = getOnScreenLocation(bot, partyMember['index'])
-            if partyMemberCoords[0] != None:
-                partyMembersOnScreen.append(partyMember)
-    bot.log(
-        f'[Logic] ({len(partyMembersOnScreen)}) Party members detected on-screen...')
-    for x in partyMembersOnScreen:
-        bot.log(f'[Logic] Party member ({x["name"]}) detected on screen')
-
-    return partyMembersOnScreen
-
-
-def replaceRunes(bot, ids):
-    if bot.memory.GetHotbar() != 8:
-        bot.memory.SetHotbar(8)
+def replaceRunes(bot, ids: List[int]):
+    if memory.GetHotbar() != 8:
+        memory.SetHotbar(8)
 
     pyautogui.keyDown('shift')
     time.sleep(0.250)
 
     for id in ids:
-        if id == bot.consts.Rune.BODY:
+        if id == consts.Rune.BODY:
             bot.log(f'[Logic] Replacing Body Rune')
             pyautogui.press('f5')
-        elif id == bot.consts.Rune.MALENOX:
+        elif id == consts.Rune.MALENOX:
             bot.log(f'[Logic] Replacing Malenox Rune')
             pyautogui.press('f6')
-        elif id == bot.consts.Rune.AGON:
+        elif id == consts.Rune.AGON:
             bot.log(f'[Logic] Replacing Agon Rune')
             pyautogui.press('f7')
-        elif id == bot.consts.Rune.MALITH:
+        elif id == consts.Rune.MALITH:
             bot.log(f'[Logic] Replacing Malith Rune')
             pyautogui.press('f8')
-        elif id == bot.consts.Rune.ULTHIEN:
+        elif id == consts.Rune.ULTHIEN:
             bot.log(f'[Logic] Replacing Ulthien Rune')
             pyautogui.press('f9')
-        elif id == bot.consts.Rune.SABAL:
+        elif id == consts.Rune.SABAL:
             bot.log(f'[Logic] Replacing Sabal Rune')
             pyautogui.press('f10')
-        elif id == bot.consts.Rune.ISOS:
+        elif id == consts.Rune.ISOS:
             bot.log(f'[Logic] Replacing Isos Rune')
             pyautogui.press('f11')
-        elif id == bot.consts.Rune.VELDAN:
+        elif id == consts.Rune.VELDAN:
             bot.log(f'[Logic] Replacing Veldan Rune')
             pyautogui.press('f12')
 
@@ -379,12 +284,12 @@ def replaceRunes(bot, ids):
 
 
 def checkRunes(bot):
-    Rune_slots = bot.memory.GetRuneSlots()
+    Rune_slots = memory.GetRuneSlots()
     indexes = []
 
     if Rune_slots > 0:
-        Rune_types = bot.memory.GetRuneTypes()
-        Rune_charges = bot.memory.GetRuneCharges()
+        Rune_types = memory.GetRuneTypes()
+        Rune_charges = memory.GetRuneCharges()
         for index in range(Rune_slots - 1):
             charges = Rune_charges[index]
             time.sleep(0.100)
@@ -395,7 +300,7 @@ def checkRunes(bot):
         replaceRunes(bot, indexes)
 
 
-def getMissingHealthPercentage(memory):
+def getMissingHealthPercentage():
     health_total = memory.GetMaxHealth()
     health_value = memory.GetCurHealth()
     if health_value == 0 or health_total == 0:
@@ -403,18 +308,18 @@ def getMissingHealthPercentage(memory):
     return int(100 * float(health_value)/float(health_total))
 
 
-def useHealingPotion(bot):
-    if bot.memory.GetHotbar() != 8:
-        bot.memory.SetHotbar(8)
+def useHealingPotion():
+    if memory.GetHotbar() != 8:
+        memory.SetHotbar(8)
     pyautogui.press('f4')
 
 
 def useMagicalWeapon(bot):
-    RuneSlots = bot.memory.GetRuneSlots()
+    RuneSlots = memory.GetRuneSlots()
 
-    if bot.memory.GetHotbar() != 8:
+    if memory.GetHotbar() != 8:
         bot.log('[Logic] Switching to hotbar #8')
-        bot.memory.SetHotbar(8)
+        memory.SetHotbar(8)
 
     # Equip a magical weapon
     if RuneSlots == 0:
@@ -428,14 +333,14 @@ def useMagicalWeapon(bot):
 
 
 def useBodyRune(bot):
-    RuneTypes = bot.memory.GetRuneTypes()
+    RuneTypes = memory.GetRuneTypes()
 
-    if bot.memory.GetHotbar() != 8:
+    if memory.GetHotbar() != 8:
         bot.log('[Logic] Switching to hotbar #8')
-        bot.memory.SetHotbar(8)
+        memory.SetHotbar(8)
 
     # If we aren't using a body Rune, switch to one
-    if len(RuneTypes) > 0 and RuneTypes[0] != bot.consts.Rune.BODY:
+    if len(RuneTypes) > 0 and RuneTypes[0] != consts.Rune.BODY:
         bot.log('[Logic] Switching Rune slot 0 to body')
         pyautogui.keyDown('shift')
         time.sleep(0.250)
@@ -445,12 +350,36 @@ def useBodyRune(bot):
         time.sleep(0.250)
 
 
-def useNonMagicalWeapon(bot):
-    RuneSlots = bot.memory.GetRuneSlots()
+def useRune(bot, runeType: int):
+    RuneTypes = memory.GetRuneTypes()
 
-    if bot.memory.GetHotbar() != 8:
+    if memory.GetHotbar() != 9:
+        bot.log('[Logic] Switching to hotbar #9')
+        memory.SetHotbar(9)
+
+    # If we aren't using a mind Rune, switch to one
+    if len(RuneTypes) > 0 and RuneTypes[0] != runeType:
+        if runeType == consts.Rune.BODY:
+            bot.log('[Logic] Switching Rune slot 0 to Body')
+            pyautogui.press('f4')
+        elif runeType == consts.Rune.MIND:
+            bot.log('[Logic] Switching Rune slot 0 to Mind')
+            pyautogui.press('f5')
+        elif runeType == consts.Rune.NATURE:
+            bot.log('[Logic] Switching Rune slot 0 to Nature')
+            pyautogui.press('f6')
+        elif runeType == consts.Rune.SOUL:
+            bot.log('[Logic] Switching Rune slot 0 to Soul')
+            pyautogui.press('f7')
+        time.sleep(0.250)
+
+
+def useNonMagicalWeapon(bot):
+    RuneSlots = memory.GetRuneSlots()
+
+    if memory.GetHotbar() != 8:
         bot.log('[Logic] Switching to hotbar #8')
-        bot.memory.SetHotbar(8)
+        memory.SetHotbar(8)
 
     # Equip a non-magical weapon
     if RuneSlots > 0:
@@ -465,8 +394,8 @@ def useNonMagicalWeapon(bot):
         time.sleep(0.250)
 
 
-def selectSpell(bot, spell_id=int, hotbar_key=str):
-    while bot.memory.GetSpell() != spell_id:
+def selectSpell(spell_id: int, hotbar_key: str):
+    while memory.GetSpell() != spell_id:
         pyautogui.press(hotbar_key)
         time.sleep(0.250)
 
@@ -476,28 +405,51 @@ def prepareToHeal(bot):
     useBodyRune(bot)
 
 
-def prepareToAttack(bot):
-    if bot.memory.GetSpell() != 0:
+def prepareToBuff(bot):
+    if memory.GetHotbar() != 2:
+        bot.log('[Logic] Switching to hotbar #2')
+        memory.SetHotbar(2)
+
+
+def prepareToAttack():
+    if memory.GetSpell() != 0:
         pyautogui.press('f2')
     # useNonMagicalWeapon(bot)
 
 
+def useSpell(bot, spell: int, spellType: int, coords: List[int], offsets: List[int]):
+    if not memory.GetSpell() == spell:
+        memory.SetSpell(spell)
+    if not memory.GetSpellState() == 1:
+        memory.SetSpellState(1)
+    if not memory.GetSpellType() == spellType:
+        memory.SetSpellType(spellType)
+
+    bot.controller.move_mouse(coords[0] + offsets[0], coords[1] + [1], False)
+    bot.controller.left_mouse_click()
+    spellResult = checkSpellResult()
+    if spellResult() == 3:  # fizzled
+        useSpell(bot, spell, spellType, coords, offsets)
+    time.sleep(consts.TIMER_BUFF)
+    checkRunes(bot)
+
+
 def useHealingSpell(bot):
     prepareToHeal(bot)
-    selectSpell(bot, bot.consts.Spell.SUPERIOR_HEAL, 'f2')
+    selectSpell(consts.Spell.SUPERIOR_HEAL, 'f2')
 
     bot.log('[Logic] Casting heal on self')
     clickSelf(bot)
     if checkForComatMessage('Your Superior Heal spell fizzled'):
         bot.log('[Logic] Superior Heal fizzled! Recasting...')
         clickSelf(bot)
-    time.sleep(bot.consts.TIMER_SUPERIOR_HEAL)
+    time.sleep(consts.TIMER_SUPERIOR_HEAL)
     checkRunes(bot)
 
 
 def useCallOfTheGodsSpell(bot):
     prepareToHeal(bot)
-    selectSpell(bot, bot.consts.Spell.CALL_OF_THE_GODS, 'f6')
+    selectSpell(consts.Spell.CALL_OF_THE_GODS, 'f6')
 
     bot.log('[Logic] Casting Call of the Gods on bot')
     clickSelf(bot)
@@ -508,239 +460,238 @@ def useCallOfTheGodsSpell(bot):
         bot.log(
             '[Logic] Call of the Gods on cooldown! Switching to Superior Heal')
         return useHealingSpell(bot)
-    time.sleep(bot.consts.TIMER_SUPERIOR_HEAL)
+    time.sleep(consts.TIMER_SUPERIOR_HEAL)
     checkRunes(bot)
 
 
-def useStaminaPotion(bot):
-    if bot.memory.GetHotbar() != 8:
-        bot.memory.SetHotbar(8)
+def useStaminaPotion():
+    if memory.GetHotbar() != 8:
+        memory.SetHotbar(8)
     pyautogui.press('f3')
 
 
+def getPartyMemberScreenLocation(bot, partyMember):
+    selfCoords = consts.SELF_ONSCREEN_COORDS
+    tileWidth, tileHeight = consts.TILE_SIZE
+    xDif, yDif = partyMember['distance']
+
+    xOffset = 0
+    yOffset = 0
+    if xDif < 0:
+        xOffset = -abs(xDif * tileWidth)
+    else:
+        xOffset = abs(xDif * tileWidth)
+
+    if yDif < 0:
+        yOffset = -abs(yDif * tileHeight)
+    else:
+        yOffset = abs(yDif * tileHeight)
+
+    bot.log(f'[Logic] getPartyMemberScreenLocation xDif: {xDif}, yDif: {yDif}')
+    bot.log(
+        f'[Logic] getPartyMemberScreenLocation xOffset: {xOffset}, yOffset: {yOffset}')
+
+    return {'coords': selfCoords, 'offsets': [xOffset, yOffset]}
+
+
+def buffPartyMember(bot, partyMember):
+
+    useMagicalWeapon(bot)
+
+    useRune(bot, consts.Rune.MIND)
+    bot.log(f'[Logic] Casting debuffs')
+    debuffs = [consts.Spell.ANARCHY, consts.Spell.ANARCHY,
+               consts.Spell.ANARCHY, consts.Spell.ANARCHY]
+    prepareToBuff(bot)
+    if memory.GetSpell() == 0:
+        pyautogui.press('f2')
+
+    location = getPartyMemberScreenLocation(bot, partyMember)
+
+    for spell in range(len(debuffs)-1):
+        useSpell(bot, spell, 5,
+                 location['coords'], offsets=location['offsets'])
+
+    buffs = [consts.Spell.RESPLENDENCE, consts.Spell.ALACRITY, consts.Spell.GRANDEUR, consts.Spell.GAZELLE, consts.Spell.AEGIS, consts.Spell.FAITH,
+             consts.Spell.DARK_PRAYER, consts.Spell.BLESSING_OF_ARNA, consts.Spell.BULWARK_MIGHT, consts.Spell.HOLY_AURA, consts.Spell.FORTIFY]
+
+    bot.log(f'[Logic] Casting buffs')
+    prepareToBuff(bot)
+
+    location = getPartyMemberScreenLocation(bot, partyMember)
+
+    for spell in range(len(buffs)-1):
+        useSpell(bot, spell, 5,
+                 location['coords'], offsets=location['offsets'])
+
+
 def healPartyMember(bot, partyMember):
-    try:
-        if not 'name' in partyMember:
-            return
+    prepareToHeal(bot)
 
-        bot.active_party_member_name = partyMember['name']
-        prepareToHeal(bot)
+    while memory.GetSpell() != consts.Spell.SUPERIOR_HEAL:
+        pyautogui.press('f2')
+        time.sleep(0.250)
 
-        while bot.memory.GetSpell() != bot.consts.Spell.SUPERIOR_HEAL:
-            pyautogui.press('f2')
-            time.sleep(0.250)
+    bot.log(
+        f'[Logic] Casting superior heal on party member [{partyMember["name"]}] ({partyMember["percentage"]}%)')
+    location = getPartyMemberScreenLocation(bot, partyMember)
+    clickNpcID(bot, partyMember['npcID'], location['coords'][0],
+               location['coords'][1], offset=location['offsets'])
 
-        selfCoords = bot.consts.SELF_ONSCREEN_COORDS
-        selfIndex = getSelfIndex(bot)
-        if selfIndex == None:
-            return
-        selfLocation = bot.memory.GetPartyMemberLocation(selfIndex)
-        if selfLocation[0] == None:
-            return
-        memberLocation = bot.memory.GetPartyMemberLocation(
-            partyMember['index'])
-        if memberLocation[0] == None:
-            return
+    if checkForComatMessage('Your Superior Heal spell fizzled'):
+        bot.log('[Logic] Spell fizzled! Recasting...')
+        location = getPartyMemberScreenLocation(bot, partyMember)
+        clickNpcID(bot, partyMember['npcID'], location['coords'][0],
+                   location['coords'][1], offset=location['offsets'])
 
-        xDif, yDif = getDistanceApart(bot, selfLocation, memberLocation)
-
-        xOffset = 0
-        yOffset = 0
-        if xDif < 0:
-            xOffset = -abs(xDif * bot.consts.TILE_SIZE)
-        else:
-            xOffset = abs(xDif * bot.consts.TILE_SIZE)
-
-        if yDif < 0:
-            yOffset = -abs(yDif * bot.consts.TILE_SIZE)
-        else:
-            yOffset = abs(yDif * bot.consts.TILE_SIZE)
-
-        bot.log(f'[Logic] selfCoords: {selfCoords}')
-        bot.log(f'[Logic] selfLocation: {selfLocation}')
-        bot.log(f'[Logic] memberLocation: {memberLocation}')
-        bot.log(f'[Logic] xDif: {xDif}, yDif: {yDif}')
-        bot.log(f'[Logic] xOffset: {xOffset}, yOffset: {yOffset}')
-
-        bot.log(
-            f'[Logic] Casting superior heal on party member [{partyMember["name"]}] (priority: {partyMember["priority"]})')
-        clickNpcID(bot, partyMember['npcID'], selfCoords[0],
-                   selfCoords[1], offset=[xOffset, yOffset])
-
-        if checkForComatMessage('Your Superior Heal spell fizzled'):
-            bot.log('[Logic] Spell fizzled! Recasting...')
-            clickNpcID(bot, partyMember['npcID'], selfCoords[0],
-                       selfCoords[1], offset=[xOffset, yOffset])
-
-        time.sleep(bot.consts.TIMER_SUPERIOR_HEAL)
-        checkRunes(bot)
-    except Exception as e:
-        bot.log(f'[Logic] {traceback.format_exc()}')
+    time.sleep(consts.TIMER_SUPERIOR_HEAL)
+    checkRunes(bot)
 
 
-def useFood(bot):
-    if bot.memory.GetHotbar() != 8:
-        bot.memory.SetHotbar(8)
+def useFood():
+    if memory.GetHotbar() != 8:
+        memory.SetHotbar(8)
     pyautogui.press('f9')
 
 
-def useRegenerationTotem(bot):
-    if bot.memory.GetHotbar() != 8:
-        bot.memory.SetHotbar(8)
+def useRegenerationTotem():
+    if memory.GetHotbar() != 8:
+        memory.SetHotbar(8)
     pyautogui.press('f10')
 
 
-def useClassTotem(bot):
-    if bot.memory.GetHotbar() != 8:
-        bot.memory.SetHotbar(8)
+def useClassTotem():
+    if memory.GetHotbar() != 8:
+        memory.SetHotbar(8)
     pyautogui.press('f11')
 
 
-def useWerewolfTotem(bot):
-    if bot.memory.GetHotbar() != 8:
-        bot.memory.SetHotbar(8)
+def useWerewolfTotem():
+    if memory.GetHotbar() != 8:
+        memory.SetHotbar(8)
     pyautogui.press('f12')
 
 
 def getNewTarget(bot):
-    if bot.memory.GetTargetId() > 0:
+    target = 0
+    if memory.GetTargetId() > 0 and checkAttackResult() != 2:
         return
 
-    prepareToAttack(bot)
+    bot.looking_for_target = True
+    prepareToAttack()
 
     bot.log('[Attacker] Looking for a new target...')
-    bot.looking_for_target = True
-    for i in range(30):
+    tick = 0
+    while tick < 30:
         if bot.state != 1:
-            target = -1
+            bot.looking_for_target = False
             break
-        pyautogui.press("`")
+        pyautogui.press('`')
         time.sleep(0.250)
-        if bot.memory.GetTargetId() > 0:
-            bot.log(f'[Logic] Mew target found!')
-            break
-        else:
-            time.sleep(0.500)
-
+        target = memory.GetTargetId()
+        if target > 0:
+            time.sleep(0.250)
+            if checkAttackResult() != 2:
+                bot.log(f'[Logic] Mew target found!')
+                break
+        pyautogui.press('~')
+        time.sleep(0.250)
+        target = memory.GetTargetId()
+        if target > 0:
+            time.sleep(0.250)
+            if checkAttackResult() != 2:
+                bot.log(f'[Logic] Mew target found!')
+                break
+        tick += 1
+    if target == 0:
+        bot.log(f'[Logic] Failed to find new target!')
     bot.looking_for_target = False
 
 
 def getPartyMemberToHeal(bot):
+    party_members_on_screen = bot.party_members_on_screen
     if bot.last_party_count == 0:
         return
-
-    memberToHeal = {'priority': -1}
-    bot.log('[Logic] Checking if any party member needs healing...')
-
-    doesAMemberNeedHealing = False
-    for partyMember in bot.party_members_data:
-        if partyMember['name'] == 'Night Elf Male':
-            continue
-
-        if 'priority' in partyMember:
-            if partyMember['priority'] > 0:
-                doesAMemberNeedHealing = True
-
-    # Check if anyone needs healing in the party
-    # if not doesAMemberNeedHealing:
-    #    return
-
-    bot.party_members_on_screen = findPartyMembersOnScreen(bot)
-    if len(bot.party_members_on_screen) == 0:
+    if len(party_members_on_screen) == 0:
         return
 
+    memberToHeal = {'percentage': 100}
     bot.log(
-        '[Logic] Checking for the party member on-screen with the highest priority level...')
-    for partyMember in bot.party_members_on_screen:
-        try:
-            if bot.state != 1:
-                break
+        '[Logic] Checking for the party member on-screen with the lowest health percentage level...')
+    for partyMember in party_members_on_screen:
+        if bot.state != 1:
+            break
 
-            priority = partyMember['priority']
-
-            # If our last target still needs heals, continue healing them first
-            if bot.active_party_member_name != '':
-                if partyMember['name'] == bot.active_party_member_name and priority > 0:
-                    memberToHeal = partyMember
-                    break
-
-            if priority >= 5:  # Priority is 5 or more, so ignore all other checks
-                memberToHeal = partyMember
-                break
-            elif priority > memberToHeal['priority']:
-                memberToHeal = partyMember
-        except Exception as e:
-            bot.log(f'[Logic] {traceback.format_exc()}')
+        percentage = partyMember['percentage']
+        if percentage == None or percentage == 100:
             continue
+
+        if percentage > memberToHeal['percentage']:
+            memberToHeal = partyMember
 
     if 'name' in memberToHeal:
         partyMemberName = memberToHeal["name"]
         bot.log(
-            f'[Logic] Party member to heal: {partyMemberName} (priority: {memberToHeal["priority"]})')
+            f'[Logic] Party member to heal: {partyMemberName} ({memberToHeal["percentage"]}%)')
         healPartyMember(bot, memberToHeal)
     else:
-        bot.active_party_member_name = ''
         bot.log(
             f'[Logic] Failed to find any party members needing healing on the screen')
 
 
-def getPartyMembersPriority(bot, partyMember):
-    healthColor = (239, 74, 74)
-    priority = 0
-    try:
-        if bot.state != 1:
-            return partyMember
-        locX = int(partyMember['gui']['left'] + 132)
-        locY = int(partyMember['gui']['top'] + 3)
+def getEntitiesOnScreen(bot):
+    bot.log(f'[Logic] Updating entities on the screen...')
 
-        if ImageGrab.grab().getpixel((locX, locY)) != healthColor:
-            priority = 1
-            if not ImageGrab.grab().getpixel((locX - 5, locY)) == healthColor:
-                priority = 2
-                if not ImageGrab.grab().getpixel((locX - 10, locY)) == healthColor:
-                    priority = 3
-                    if not ImageGrab.grab().getpixel((locX - 15, locY)) == healthColor:
-                        priority = 4
-                        if not ImageGrab.grab().getpixel((locX - 20, locY)) == healthColor:
-                            priority = 5
-                            if not ImageGrab.grab().getpixel((locX - 25, locY)) == healthColor:
-                                priority = 6
-    except Exception as e:
-        bot.log(f'[Logic] {traceback.format_exc()}')
-    finally:
-        return priority
+    selfLoc = memory.GetLocation()
+    entities = []
+    for row in consts.SCREEN_ROWS:
+        for column in row:
+            for i in range(1):
+                hexCode = hex(column + (i * 4))
+                entity = memory.GetEntityData(hexCode)
+                if entity['npcID'] != 0 and entity['name'] != '':
+                    distance = getDistanceApart(
+                        selfLoc, entity['coords'], True)
+                    if distance[0] <= 14 and distance[0] >= -13:
+                        if distance[1] <= 12 and distance[1] >= -12:
+                            entity['distance'] = distance
+                            entity['percentage'] = (
+                                entity['hp'][1] / entity['hp'][0]) * 100
+                            entities.append(entity)
+
+    bot.entities_on_screen = filter(entities, 'npcID')
+    bot.log(
+        f'[Logic] Found {len(bot.entities_on_screen)} entities on the screen...')
 
 
-def updatePartyMembersData(bot):
+def getPartyMembersOnScreen(bot):
+    bot.log(f'[Logic] Updating party members on the screen...')
+
+    partyMembersOnScreen = []
+    entities_on_screen = bot.entities_on_screen
+    party_member_ids = bot.party_member_ids
+
+    bot.log('[Logic] Checking for party members on-screen...')
+    if len(party_member_ids) > 0 and len(entities_on_screen) > 0:
+        for entity in entities_on_screen:
+            if entity['npcID'] in party_member_ids:
+                partyMembersOnScreen.append(entity)
+
+    bot.log(
+        f'[Logic] ({len(partyMembersOnScreen)}) Party members detected on-screen...')
+    for x in partyMembersOnScreen:
+        bot.log(f'[Logic] Party member ({x["name"]}) detected on screen')
+
+    bot.party_members_on_screen = partyMembersOnScreen
+
+
+def getPartyMembersIds(bot):
     partyCount = bot.last_party_count
-    bot.log(f'[Logic] Updating party members coords: [{partyCount}]')
+    bot.log(f'[Logic] Updating party member NPC IDs: [{partyCount}]')
 
-    for party_member in bot.party_members_data:
-        party_member['priority'] = getPartyMembersPriority(
-            bot, party_member)
-
-
-def getPartyMembersData(bot):
-    partyCount = bot.last_party_count
-    partyNames = []
-    party_data = []
-    bot.log(f'[Logic] Updating party members data: [{partyCount}]')
     if partyCount > 0:
-        matches = bot.vision.find_template('gui-party-top', threshold=0.6)
+        bot.party_member_ids = memory.GetPartyMemberIds()
+    else:
+        bot.party_member_ids = []
 
-        if np.shape(matches)[1] >= 1:
-            offset = [35, 22]
-            x = matches[1][0] + offset[1]
-            y = matches[0][0] + offset[0]
-
-            party_data = bot.memory.GetPartyMemberData()
-            for party_member in party_data:
-                offSetY = int(party_member['index'] * 15)
-                party_member['gui'] = {'top': y + offSetY, 'left': x}
-                party_member['priority'] = 0
-                partyNames.append(party_member['name'])
-
-    bot.party_members_data = party_data
-    bot.log(f'[Logic] PartyMembers: {partyNames}')
-    if len(party_data) > 0:
-        bot.log(f'[Logic] PartyMembers Data: {party_data}')
+    bot.log(f'[Logic] PartyMembers Ids: {bot.party_member_ids}')

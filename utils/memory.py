@@ -51,8 +51,8 @@ class GameProcess():
         try:
             self.rmw = ReadWriteMemory()
             self.process = self.rmw.get_process_by_name("client.exe")
-            #self.process = self.rmw.get_process_by_id(43452)
-        except Exception as err:
+            #self.process = self.rmw.get_process_by_id(32288)
+        except:
             self.rmw = None
             self.process = None
 
@@ -485,6 +485,22 @@ def GetPartyMemberData():
     return data
 
 
+def GetPartyMemberIds():
+    partyCount = GetPartyCount()
+    data = []
+    with GameProcess() as process:
+        if process != None:
+            for x in range(partyCount):
+                offsets = [0]
+                for i in range(x):
+                    offsets.append(0)
+                pointerNpcID = process.get_pointer(
+                    _base + 0x003B1AB8, offsets=[0x134] + offsets + [0x08])
+                resultNpcID = process.read(pointerNpcID)
+                data.append(resultNpcID)
+    return data
+
+
 def GetPartyMembersLocations():
     partyCount = GetPartyCount()
     locations = []
@@ -523,7 +539,7 @@ def GetPartyMembersNames():
     return names
 
 
-def GetPartyMemberLocation(index):
+def GetPartyMemberLocation(index: int):
     offsets = [0]
     for i in range(index):
         offsets.append(0)
@@ -543,7 +559,7 @@ def GetPartyMemberLocation(index):
     return result
 
 
-def GetPartyMembersName(index):
+def GetPartyMembersName(index: int):
     offsets = [0]
     for i in range(index):
         offsets.append(0)
@@ -556,7 +572,7 @@ def GetPartyMembersName(index):
     return result
 
 
-def GetPartyMembersData(index):
+def GetPartyMembersData(index: int):
     offsets = [0]
     for i in range(index):
         offsets.append(0)
@@ -584,34 +600,37 @@ def GetPartyMembersData(index):
     return result
 
 
-def GetNearEntityData(offset):
-    data = []
+def GetEntityData(offset):
+    result = {'npcID': 0, 'name': '', 'tag': '',
+              'coords': (0, 0), 'hp': (0, 0)}
     with GameProcess() as process:
         if process != None:
-            pointerNpcID = process.get_pointer(
-                _base + 0x003502D4, offsets=[210] + offset + [0xC, 0x44, 0x4])
-            resultNpcID = process.read(pointerNpcID)
             pointerName = process.get_pointer(
-                _base + 0x003502D4, offsets=[0x134] + offset + [0xC, 0x44, 0x10C])
+                _base + 0x003502D4, offsets=[0x210, offset, 0xC, 0x44, 0x10C])
             resultName = process.readString(pointerName, 20)
-            pointerGuildTag = process.get_pointer(
-                _base + 0x003502D4, offsets=[0x134] + offset + [0xC, 0x44, 0x13C])
-            resultGuildTag = process.readString(pointerGuildTag, 3)
-            pointerX = process.get_pointer(
-                _base + 0x003502D4, offsets=[0x134] + offset + [0xC, 0x44, 0xC])
-            resultX = process.readString(pointerX, 20)
-            pointerY = process.get_pointer(
-                _base + 0x003502D4, offsets=[0x134] + offset + [0xC, 0x44, 0x10])
-            resultY = process.read(pointerY)
-            pointerHP = process.get_pointer(
-                _base + 0x003502D4, offsets=[0x134] + offset + [0xC, 0x44, 0x18])
-            resultHP = process.read(pointerHP)
-            pointerMaxHP = process.get_pointer(
-                _base + 0x003502D4, offsets=[0x134] + offset + [0xC, 0x44, 0x1C])
-            resultMaxHP = process.read(pointerMaxHP)
-            data.append(
-                {'npcID': resultNpcID, 'name': resultName, 'tag': resultGuildTag, 'coords': (resultX, resultY), 'hp': (resultHP, resultMaxHP)})
-    return data
+            if resultName != None and len(resultName) > 0:
+                pointerNpcID = process.get_pointer(
+                    _base + 0x003502D4, offsets=[0x210, offset, 0xC, 0x44, 0x4])
+                resultNpcID = process.read(pointerNpcID)
+                pointerGuildTag = process.get_pointer(
+                    _base + 0x003502D4, offsets=[0x210, offset, 0xC, 0x44, 0x13C])
+                resultGuildTag = process.readString(pointerGuildTag, 20)
+                pointerX = process.get_pointer(
+                    _base + 0x003502D4, offsets=[0x210, offset, 0xC, 0x44, 0xC])
+                resultX = process.read(pointerX)
+                pointerY = process.get_pointer(
+                    _base + 0x003502D4, offsets=[0x210, offset, 0xC, 0x44, 0x10])
+                resultY = process.read(pointerY)
+                pointerHP = process.get_pointer(
+                    _base + 0x003502D4, offsets=[0x210, offset, 0xC, 0x44, 0x18])
+                resultHP = process.read(pointerHP)
+                pointerMaxHP = process.get_pointer(
+                    _base + 0x003502D4, offsets=[0x210, offset, 0xC, 0x44, 0x1C])
+                resultMaxHP = process.read(pointerMaxHP)
+                if resultNpcID > 0:
+                    result = {'npcID': resultNpcID, 'name': resultName, 'tag': resultGuildTag, 'coords': (
+                        resultX, resultY), 'hp': (resultHP, resultMaxHP)}
+    return result
 
 
 def GetTargetId():
@@ -624,6 +643,7 @@ def GetTargetId():
         if result == 4294967295:
             result = 0
     return result
+# 2F0F318
 
 
 def CheckFollower():

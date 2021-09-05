@@ -1,15 +1,18 @@
 {
   "cSpell.words": [
-    "Isos",
-    "Sabal",
-    "Ulthien",
+    "ctypes",
+    "hwnd",
     "isdigit",
+    "Isos",
+    "KEYUP",
     "malenox",
     "malith",
     "onvalue",
     "padx",
     "pady",
     "pyautogui",
-    "pyscreenshot"
+    "pyscreenshot",
+    "Sabal",
+    "Ulthien"
   ]
 }

@@ -1,16 +1,18 @@
 import time
 import keyboard
 import threading
+import numpy as np
 
+import utils.constants as consts
+import utils.ocr as OCR
+import utils.memory as memory
 import utils.logic as logic
 from utils.queue import LoggerThread, ConsumerThread
 
 
 class AttackerThread(threading.Thread):
     state: str = 0
-    consts = None
-    memory = None
-    ocr = None
+    ocr = OCR
     vision = None
     controller = None
     loggerQ: LoggerThread = None
@@ -27,9 +29,7 @@ class AttackerThread(threading.Thread):
         self.target = target
         self.name = name
         self.state = 0
-        self.consts = kwargs['consts']
-        self.memory = kwargs['memory']
-        self.ocr = kwargs['ocr']
+        self.ocr = OCR
         self.vision = kwargs['vision']
         self.controller = kwargs['controller']
         self.loggerQ = LoggerThread()
@@ -45,6 +45,8 @@ class AttackerThread(threading.Thread):
         self.looking_for_target = False
 
         keyboard.add_hotkey('pause', self.toggle_pause)
+        keyboard.add_hotkey('ctrl+n', self.checkMouseNPCId)
+        keyboard.add_hotkey('ctrl+insert', self.entityData)
 
     def log(self, text):
         self.loggerQ.add(text)
@@ -62,8 +64,31 @@ class AttackerThread(threading.Thread):
             self.log('[Attacker] Paused')
         time.sleep(0.500)
 
+    def checkMouseNPCId(self):
+        npcID = memory.GetMouseNPCId()
+        self.log(f'[Healer] GetMouseNPCId: {npcID}')
+
+    def entityData(self):
+        entities = []
+        selfLoc = memory.GetLocation()
+        for row in consts.SCREEN_ROWS:
+            for column in row:
+                for i in range(1):
+                    hexCode = hex(column + (i * 4))
+                    entity = memory.GetEntityData(hexCode)
+                    if entity['npcID'] != 0 and entity['name'] != '':
+                        distance = logic.getDistanceApart(
+                            selfLoc, entity['coords'], True)
+                        if distance[0] <= 14 and distance[0] >= -13:
+                            if distance[1] <= 12 and distance[1] >= -12:
+                                entity['distance'] = distance
+                                entities.append(entity)
+        entities = logic.filter(entities, 'name')
+        self.log(
+            f'[Attacker] GetEntityNames: {logic.flatten(entities, "name")}')
+
     def checkGame(self):
-        with self.memory.GameProcess() as process:
+        with memory.GameProcess() as process:
             if process == None:
                 self.process_found = False
             else:
@@ -78,13 +103,12 @@ class AttackerThread(threading.Thread):
         self.cog_timeout = False
 
     def checkOwnHealth(self):
-        healthPercentage = logic.getMissingHealthPercentage(
-            self.memory)
+        healthPercentage = logic.getMissingHealthPercentage()
         if healthPercentage == 100:
             return
 
         if healthPercentage < 98:
-            newPoisonDisease = self.memory.GetPoisonDisease()
+            newPoisonDisease = memory.GetPoisonDisease()
             if newPoisonDisease != self.last_poison_disease:
                 self.last_poison_disease = newPoisonDisease
                 if newPoisonDisease > 0:  # Check if we are now poisoned or diseased
@@ -102,25 +126,23 @@ class AttackerThread(threading.Thread):
             self.workerQ.add('useHealingSpell')
 
     def checkOwnStamina(self):
-        ownStamina = self.memory.GetStamina()
+        ownStamina = memory.GetStamina()
 
         if ownStamina < 40:
             self.log(f'[Attacker] Stamina: {ownStamina}')
             self.workerQ.add('useStaminaPotion')
 
     def checkTarget(self):
-        target = self.memory.GetTargetId()
-        if target == 0:
-            self.workerQ.add('getNewTarget')
+        self.workerQ.add('getNewTarget')
 
     def checkSystemMessage(self):
-        message = self.memory.CheckSystemMessage()
-        if message != '' and message != 0:
+        message = memory.CheckSystemMessage()
+        if message != None and message != '' and message != 0:
             self.log(f'[Attacker] CheckSystemMessage: {message}')
 
     def checkGuildMessage(self):
-        message = self.memory.GetGuildMessage()
-        if message != '' and message != 0:
+        message = memory.GetGuildMessage()
+        if message != None and message != '' and message != 0:
             self.log(f'[Attacker] GetGuildMessage: {message}')
 
     def checkTotemsAndFood(self):
@@ -148,7 +170,7 @@ class AttackerThread(threading.Thread):
         _tick = 0
 
         while True:
-            threading.Thread(target=self.checkSystemMessage).start()
+            # threading.Thread(target=self.checkSystemMessage).start()
             if self.state == 1:
                 self.checkGame()
                 if self.process_found:
@@ -157,7 +179,7 @@ class AttackerThread(threading.Thread):
                         threading.Thread(target=self.checkTarget).start()
                     threading.Thread(target=self.checkOwnHealth).start()
                     threading.Thread(target=self.checkOwnStamina).start()
-                    if _tick > 20:
+                    if _tick > 60:
                         threading.Thread(
                             target=self.checkTotemsAndFood).start()
                         _tick = 0
