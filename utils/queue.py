@@ -82,14 +82,10 @@ class ConsumerThread(threading.Thread):
             logic.useCallOfTheGodsSpell(self.bot)
         elif name == 'useStaminaPotion':
             logic.useStaminaPotion()
-        elif name == 'getPartyMembersIds':
-            logic.getPartyMembersIds(self.bot)
         elif name == 'getEntitiesOnScreen':
             logic.getEntitiesOnScreen(self.bot)
-        elif name == 'getPartyMemberToHeal':
-            logic.getPartyMemberToHeal(self.bot)
-        elif name == 'getPartyMembersOnScreen':
-            logic.getPartyMembersOnScreen(self.bot)
+        elif name == 'getEntityToHeal':
+            logic.getEntityToHeal(self.bot)
         elif name == 'getNewTarget':
             logic.getNewTarget(self.bot)
         elif name == 'useFood':

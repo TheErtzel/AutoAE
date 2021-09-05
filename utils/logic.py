@@ -5,12 +5,8 @@ import os
 import time
 import glob
 import pyautogui
-import numpy as np
-from PIL import ImageGrab
 from collections import Counter
 from typing import Union, List, Tuple
-
-from tkinter import *
 
 import utils.constants as consts
 import utils.memory as memory
@@ -68,6 +64,10 @@ def flatten(source, key):
     for element in source:
         result.append(element[key])
     return result
+
+
+def sortBy(source, key, reverse=False):
+    return sorted(source, key=lambda item: item[key], reverse=reverse)
 
 
 def hexRange(start=0x0, stop=0x4, step=0x04):
@@ -144,6 +144,8 @@ def checkSpellResult():
         return 3
     elif 'is too far away' in checkline:
         return 4
+    elif 'You cannot cast' in checkline:
+        return 5
     else:
         return 0
 
@@ -185,9 +187,9 @@ def clickLocation(bot, x: int, y: int, offset: List[int] = [48, 55]):
     time.sleep(0.250)
 
 
-def foundNpcIdAtPosition(bot, npcID: int, x: int, y: int):
+def foundIdAtPosition(bot, id: int, x: int, y: int):
     bot.controller.move_mouse(x, y, False)
-    if memory.GetMouseNPCId() == npcID:
+    if memory.GetMouseId() == id:
         return True
     return False
 
@@ -212,28 +214,28 @@ def generateNpcRange(baseX: int, baseY: int):
     return npcRange
 
 
-def clickNpcID(bot, npcID: int, baseX: int, baseY: int, offset: List[int] = [0, 0]):
+def clickEntity(bot, id: int, baseX: int, baseY: int, offset: List[int] = [0, 0]):
     if baseX != None and baseY != None:
         foundID = False
         bot.log(
-            f'clickNpcID [1]: npcID: {npcID}, baseX: {baseX}, baseY: {baseY}, offset: {offset}')
+            f'clickEntity [1]: id: {id}, baseX: {baseX}, baseY: {baseY}, offset: {offset}')
 
         mouseX, mouseY = bot.controller.getCursorPos()
-        foundID = foundNpcIdAtPosition(
-            bot, npcID, mouseX + offset[0], mouseY + offset[1])
+        foundID = foundIdAtPosition(
+            bot, id, mouseX + offset[0], mouseY + offset[1])
 
-        foundID = foundNpcIdAtPosition(
-            bot, npcID, baseX + offset[0], baseY + offset[1])
+        foundID = foundIdAtPosition(
+            bot, id, baseX + offset[0], baseY + offset[1])
 
         if not foundID:
             npcRange = sort_Tuple(generateNpcRange(
                 bot, baseX, baseY), 1)
             for nr in npcRange:
-                if foundNpcIdAtPosition(bot, npcID, nr[0] + offset[0], nr[1] + offset[1]):
+                if foundIdAtPosition(bot, id, nr[0] + offset[0], nr[1] + offset[1]):
                     foundID = True
                     break
 
-        bot.log(f'clickNpcID [6]: foundID: {foundID}')
+        bot.log(f'clickEntity [6]: foundID: {foundID}')
         if foundID:
             bot.controller.left_mouse_click()
             time.sleep(0.250)
@@ -300,12 +302,8 @@ def checkRunes(bot):
         replaceRunes(bot, indexes)
 
 
-def getMissingHealthPercentage():
-    health_total = memory.GetMaxHealth()
-    health_value = memory.GetCurHealth()
-    if health_value == 0 or health_total == 0:
-        return 0
-    return int(100 * float(health_value)/float(health_total))
+def getMissingHealthPercentage(value, total):
+    return int(value/total) * 100
 
 
 def useHealingPotion():
@@ -440,7 +438,7 @@ def useHealingSpell(bot):
 
     bot.log('[Logic] Casting heal on self')
     clickSelf(bot)
-    if checkForComatMessage('Your Superior Heal spell fizzled'):
+    if checkSpellResult() == 3:
         bot.log('[Logic] Superior Heal fizzled! Recasting...')
         clickSelf(bot)
     time.sleep(consts.TIMER_SUPERIOR_HEAL)
@@ -453,10 +451,10 @@ def useCallOfTheGodsSpell(bot):
 
     bot.log('[Logic] Casting Call of the Gods on bot')
     clickSelf(bot)
-    if checkForComatMessage('Your Call of the Gods spell fizzled'):
+    if checkSpellResult() == 3:
         bot.log('[Logic] Call of the Gods fizzled! Recasting...')
         clickSelf(bot)
-    elif checkForComatMessage('You cannot cast Call of the Gods for another'):
+    elif checkSpellResult() == 5:
         bot.log(
             '[Logic] Call of the Gods on cooldown! Switching to Superior Heal')
         return useHealingSpell(bot)
@@ -470,10 +468,10 @@ def useStaminaPotion():
     pyautogui.press('f3')
 
 
-def getPartyMemberScreenLocation(bot, partyMember):
+def getEntityScreenLocation(bot, entity):
     selfCoords = consts.SELF_ONSCREEN_COORDS
     tileWidth, tileHeight = consts.TILE_SIZE
-    xDif, yDif = partyMember['distance']
+    xDif, yDif = entity['distance']
 
     xOffset = 0
     yOffset = 0
@@ -487,29 +485,26 @@ def getPartyMemberScreenLocation(bot, partyMember):
     else:
         yOffset = abs(yDif * tileHeight)
 
-    bot.log(f'[Logic] getPartyMemberScreenLocation xDif: {xDif}, yDif: {yDif}')
+    bot.log(f'[Logic] getEntityScreenLocation xDif: {xDif}, yDif: {yDif}')
     bot.log(
-        f'[Logic] getPartyMemberScreenLocation xOffset: {xOffset}, yOffset: {yOffset}')
+        f'[Logic] getEntityScreenLocation xOffset: {xOffset}, yOffset: {yOffset}')
 
     return {'coords': selfCoords, 'offsets': [xOffset, yOffset]}
 
 
-def buffPartyMember(bot, partyMember):
+def buffEntity(bot, player):
 
     useMagicalWeapon(bot)
 
     useRune(bot, consts.Rune.MIND)
     bot.log(f'[Logic] Casting debuffs')
-    debuffs = [consts.Spell.ANARCHY, consts.Spell.ANARCHY,
-               consts.Spell.ANARCHY, consts.Spell.ANARCHY]
     prepareToBuff(bot)
     if memory.GetSpell() == 0:
         pyautogui.press('f2')
 
-    location = getPartyMemberScreenLocation(bot, partyMember)
-
-    for spell in range(len(debuffs)-1):
-        useSpell(bot, spell, 5,
+    location = getEntityScreenLocation(bot, player)
+    for _ in range(3):
+        useSpell(bot, consts.Spell.ANARCHY, 5,
                  location['coords'], offsets=location['offsets'])
 
     buffs = [consts.Spell.RESPLENDENCE, consts.Spell.ALACRITY, consts.Spell.GRANDEUR, consts.Spell.GAZELLE, consts.Spell.AEGIS, consts.Spell.FAITH,
@@ -518,14 +513,13 @@ def buffPartyMember(bot, partyMember):
     bot.log(f'[Logic] Casting buffs')
     prepareToBuff(bot)
 
-    location = getPartyMemberScreenLocation(bot, partyMember)
-
+    location = getEntityScreenLocation(bot, player)
     for spell in range(len(buffs)-1):
         useSpell(bot, spell, 5,
                  location['coords'], offsets=location['offsets'])
 
 
-def healPartyMember(bot, partyMember):
+def healEntity(bot, player):
     prepareToHeal(bot)
 
     while memory.GetSpell() != consts.Spell.SUPERIOR_HEAL:
@@ -533,16 +527,16 @@ def healPartyMember(bot, partyMember):
         time.sleep(0.250)
 
     bot.log(
-        f'[Logic] Casting superior heal on party member [{partyMember["name"]}] ({partyMember["percentage"]}%)')
-    location = getPartyMemberScreenLocation(bot, partyMember)
-    clickNpcID(bot, partyMember['npcID'], location['coords'][0],
-               location['coords'][1], offset=location['offsets'])
+        f'[Logic] Casting superior heal on player [{player["name"]}] ({player["percentage"]}%)')
+    location = getEntityScreenLocation(bot, player)
+    clickEntity(bot, player['id'], location['coords'][0],
+                location['coords'][1], offset=location['offsets'])
 
-    if checkForComatMessage('Your Superior Heal spell fizzled'):
+    if checkSpellResult() == 3:
         bot.log('[Logic] Spell fizzled! Recasting...')
-        location = getPartyMemberScreenLocation(bot, partyMember)
-        clickNpcID(bot, partyMember['npcID'], location['coords'][0],
-                   location['coords'][1], offset=location['offsets'])
+        location = getEntityScreenLocation(bot, player)
+        clickEntity(bot, player['id'], location['coords'][0],
+                    location['coords'][1], offset=location['offsets'])
 
     time.sleep(consts.TIMER_SUPERIOR_HEAL)
     checkRunes(bot)
@@ -608,35 +602,33 @@ def getNewTarget(bot):
     bot.looking_for_target = False
 
 
-def getPartyMemberToHeal(bot):
-    party_members_on_screen = bot.party_members_on_screen
-    if bot.last_party_count == 0:
-        return
-    if len(party_members_on_screen) == 0:
+def getEntityToHeal(bot):
+    entities_on_screen = bot.entities_on_screen
+    if len(entities_on_screen) == 0:
         return
 
     memberToHeal = {'percentage': 100}
     bot.log(
-        '[Logic] Checking for the party member on-screen with the lowest health percentage level...')
-    for partyMember in party_members_on_screen:
+        '[Logic] Checking for the entity on-screen with the lowest health percentage level...')
+    for entity in entities_on_screen:
         if bot.state != 1:
             break
 
-        percentage = partyMember['percentage']
+        percentage = entity['percentage']
         if percentage == None or percentage == 100:
             continue
 
         if percentage > memberToHeal['percentage']:
-            memberToHeal = partyMember
+            memberToHeal = entity
 
     if 'name' in memberToHeal:
-        partyMemberName = memberToHeal["name"]
+        entityName = memberToHeal["name"]
         bot.log(
-            f'[Logic] Party member to heal: {partyMemberName} ({memberToHeal["percentage"]}%)')
-        healPartyMember(bot, memberToHeal)
+            f'[Logic] Entity to heal: {entityName} ({memberToHeal["percentage"]}%)')
+        healEntity(bot, memberToHeal)
     else:
         bot.log(
-            f'[Logic] Failed to find any party members needing healing on the screen')
+            f'[Logic] Failed to find any entities needing healing on the screen')
 
 
 def getEntitiesOnScreen(bot):
@@ -644,54 +636,18 @@ def getEntitiesOnScreen(bot):
 
     selfLoc = memory.GetLocation()
     entities = []
-    for row in consts.SCREEN_ROWS:
-        for column in row:
-            for i in range(1):
-                hexCode = hex(column + (i * 4))
-                entity = memory.GetEntityData(hexCode)
-                if entity['npcID'] != 0 and entity['name'] != '':
-                    distance = getDistanceApart(
-                        selfLoc, entity['coords'], True)
-                    if distance[0] <= 14 and distance[0] >= -13:
-                        if distance[1] <= 12 and distance[1] >= -12:
-                            entity['distance'] = distance
-                            entity['percentage'] = (
-                                entity['hp'][1] / entity['hp'][0]) * 100
-                            entities.append(entity)
+    offset = consts.SCREEN_HEX[0]
+    while offset < consts.SCREEN_HEX[1]:
+        entity = memory.GetEntityData(offset)
+        if entity['id'] != 0 and entity['name'] != '':
+            distance = getDistanceApart(selfLoc, entity['coords'])
+            if distance[0] <= 14 and distance[0] >= -13 and distance[1] <= 12 and distance[1] >= -12:
+                curHP, maxHP = entity['hp']
+                entity['distance'] = distance
+                entity['percentage'] = getMissingHealthPercentage(curHP, maxHP)
+                entities.append(entity)
+        offset = offset + 4
 
-    bot.entities_on_screen = filter(entities, 'npcID')
+    bot.entities_on_screen = filter(entities, 'id')
     bot.log(
         f'[Logic] Found {len(bot.entities_on_screen)} entities on the screen...')
-
-
-def getPartyMembersOnScreen(bot):
-    bot.log(f'[Logic] Updating party members on the screen...')
-
-    partyMembersOnScreen = []
-    entities_on_screen = bot.entities_on_screen
-    party_member_ids = bot.party_member_ids
-
-    bot.log('[Logic] Checking for party members on-screen...')
-    if len(party_member_ids) > 0 and len(entities_on_screen) > 0:
-        for entity in entities_on_screen:
-            if entity['npcID'] in party_member_ids:
-                partyMembersOnScreen.append(entity)
-
-    bot.log(
-        f'[Logic] ({len(partyMembersOnScreen)}) Party members detected on-screen...')
-    for x in partyMembersOnScreen:
-        bot.log(f'[Logic] Party member ({x["name"]}) detected on screen')
-
-    bot.party_members_on_screen = partyMembersOnScreen
-
-
-def getPartyMembersIds(bot):
-    partyCount = bot.last_party_count
-    bot.log(f'[Logic] Updating party member NPC IDs: [{partyCount}]')
-
-    if partyCount > 0:
-        bot.party_member_ids = memory.GetPartyMemberIds()
-    else:
-        bot.party_member_ids = []
-
-    bot.log(f'[Logic] PartyMembers Ids: {bot.party_member_ids}')

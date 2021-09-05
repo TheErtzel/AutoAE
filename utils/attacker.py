@@ -4,7 +4,6 @@ import threading
 import numpy as np
 
 import utils.constants as consts
-import utils.ocr as OCR
 import utils.memory as memory
 import utils.logic as logic
 from utils.queue import LoggerThread, ConsumerThread
@@ -12,7 +11,6 @@ from utils.queue import LoggerThread, ConsumerThread
 
 class AttackerThread(threading.Thread):
     state: str = 0
-    ocr = OCR
     vision = None
     controller = None
     loggerQ: LoggerThread = None
@@ -29,8 +27,6 @@ class AttackerThread(threading.Thread):
         self.target = target
         self.name = name
         self.state = 0
-        self.ocr = OCR
-        self.vision = kwargs['vision']
         self.controller = kwargs['controller']
         self.loggerQ = LoggerThread()
         self.loggerQ.setDaemon(True)
@@ -45,7 +41,7 @@ class AttackerThread(threading.Thread):
         self.looking_for_target = False
 
         keyboard.add_hotkey('pause', self.toggle_pause)
-        keyboard.add_hotkey('ctrl+n', self.checkMouseNPCId)
+        keyboard.add_hotkey('ctrl+n', self.checkMouseId)
         keyboard.add_hotkey('ctrl+insert', self.entityData)
 
     def log(self, text):
@@ -64,28 +60,54 @@ class AttackerThread(threading.Thread):
             self.log('[Attacker] Paused')
         time.sleep(0.500)
 
-    def checkMouseNPCId(self):
-        npcID = memory.GetMouseNPCId()
-        self.log(f'[Healer] GetMouseNPCId: {npcID}')
+    def checkMouseId(self):
+        id = memory.GetMouseId()
+        self.log(f'[Healer] GetMouseId: {id}')
 
     def entityData(self):
         entities = []
         selfLoc = memory.GetLocation()
-        for row in consts.SCREEN_ROWS:
-            for column in row:
-                for i in range(1):
-                    hexCode = hex(column + (i * 4))
-                    entity = memory.GetEntityData(hexCode)
-                    if entity['npcID'] != 0 and entity['name'] != '':
-                        distance = logic.getDistanceApart(
-                            selfLoc, entity['coords'], True)
-                        if distance[0] <= 14 and distance[0] >= -13:
-                            if distance[1] <= 12 and distance[1] >= -12:
-                                entity['distance'] = distance
-                                entities.append(entity)
-        entities = logic.filter(entities, 'name')
+        offset = consts.SCREEN_HEX[0]
+        self.log(f'[Attacker] Getting entities on screen...')
+        while offset < consts.SCREEN_HEX[1]:
+            entity = memory.GetEntityData(offset)
+            if entity['id'] != 0 and entity['name'] != '':
+                distance = logic.getDistanceApart(selfLoc, entity['coords'])
+                if distance[0] <= 14 and distance[0] >= -13 and distance[1] <= 12 and distance[1] >= -12:
+                    curHP, maxHP = entity['hp']
+                    entity['distance'] = distance
+                    entity['percentage'] = logic.getMissingHealthPercentage(
+                        curHP, maxHP)
+                    entities.append(entity)
+            offset += 4
+        entities = logic.sortBy(logic.filter(
+            entities, 'name'), 'percentage', True)
         self.log(
             f'[Attacker] GetEntityNames: {logic.flatten(entities, "name")}')
+        self.log(
+            f'[Attacker] GetEntityPercentages: {logic.flatten(entities, "percentage")}')
+
+        offset = consts.SCREEN_HEX[0]
+        self.log(f'[Attacker] (2) Getting entities on screen...')
+        for offset in consts.SCREEN_ENTITY_OFFSETS:
+            for i in range(1):
+                hexCode = hex(offset + (i * 4))
+                entity = memory.GetEntityData(hexCode)
+                if entity['id'] != 0 and entity['name'] != '':
+                    distance = logic.getDistanceApart(
+                        selfLoc, entity['coords'])
+                    if distance[0] <= 14 and distance[0] >= -13 and distance[1] <= 12 and distance[1] >= -12:
+                        curHP, maxHP = entity['hp']
+                        entity['distance'] = distance
+                        entity['percentage'] = logic.getMissingHealthPercentage(
+                            curHP, maxHP)
+                        entities.append(entity)
+        entities = logic.sortBy(logic.filter(
+            entities, 'name'), 'percentage', True)
+        self.log(
+            f'[Attacker] (2) GetEntityNames: {logic.flatten(entities, "name")}')
+        self.log(
+            f'[Attacker] (2) GetEntityPercentages: {logic.flatten(entities, "percentage")}')
 
     def checkGame(self):
         with memory.GameProcess() as process:

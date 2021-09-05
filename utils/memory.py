@@ -223,7 +223,7 @@ def GetMouseClick():
     return result
 
 
-def GetMouseNPCId():
+def GetMouseId():
     result = 0
     with GameProcess() as process:
         if process != None:
@@ -465,9 +465,9 @@ def GetPartyMemberData():
                 offsets = [0]
                 for i in range(x):
                     offsets.append(0)
-                pointerNpcID = process.get_pointer(
+                pointerId = process.get_pointer(
                     _base + 0x003B1AB8, offsets=[0x134] + offsets + [0x08])
-                resultNpcID = process.read(pointerNpcID)
+                resultId = process.read(pointerId)
                 pointerName = process.get_pointer(
                     _base + 0x003B1AB8, offsets=[0x134] + offsets + [0x0C])
                 resultName = process.readString(pointerName, 20)
@@ -481,7 +481,7 @@ def GetPartyMemberData():
                     _base + 0x003B1AB8, offsets=[0x134] + offsets + [0x4C])
                 resultZ = process.read(pointZ)
                 data.append(
-                    {'index': x, 'npcID': resultNpcID, 'name': resultName, 'coords': (resultX, resultY, resultZ)})
+                    {'index': x, 'id': resultId, 'name': resultName, 'coords': (resultX, resultY, resultZ)})
     return data
 
 
@@ -494,10 +494,10 @@ def GetPartyMemberIds():
                 offsets = [0]
                 for i in range(x):
                     offsets.append(0)
-                pointerNpcID = process.get_pointer(
+                pointerId = process.get_pointer(
                     _base + 0x003B1AB8, offsets=[0x134] + offsets + [0x08])
-                resultNpcID = process.read(pointerNpcID)
-                data.append(resultNpcID)
+                resultId = process.read(pointerId)
+                data.append(resultId)
     return data
 
 
@@ -576,13 +576,13 @@ def GetPartyMembersData(index: int):
     offsets = [0]
     for i in range(index):
         offsets.append(0)
-    result = {'index': -1, 'npcID': None,
+    result = {'index': -1, 'id': None,
               'name': None, 'coords': (None, None, None)}
     with GameProcess() as process:
         if process != None:
-            pointerNpcID = process.get_pointer(
+            pointerId = process.get_pointer(
                 _base + 0x003B1AB8, offsets=[0x134] + offsets + [0x08])
-            resultNpcID = process.read(pointerNpcID)
+            resultId = process.read(pointerId)
             pointerName = process.get_pointer(
                 _base + 0x003B1AB8, offsets=[0x134] + offsets + [0x000C])
             resultName = process.readString(pointerName, 20)
@@ -595,13 +595,13 @@ def GetPartyMembersData(index: int):
             pointZ = process.get_pointer(
                 _base + 0x003B1AB8, offsets=[0x134] + offsets + [0x4C])
             resultZ = process.read(pointZ)
-            result = {'index': index, 'npcID': resultNpcID, 'name': resultName,
+            result = {'index': index, 'id': resultId, 'name': resultName,
                       'coords': (resultX, resultY, resultZ)}
     return result
 
 
 def GetEntityData(offset):
-    result = {'npcID': 0, 'name': '', 'tag': '',
+    result = {'id': 0, 'name': '', 'tag': '',
               'coords': (0, 0), 'hp': (0, 0)}
     with GameProcess() as process:
         if process != None:
@@ -609,9 +609,9 @@ def GetEntityData(offset):
                 _base + 0x003502D4, offsets=[0x210, offset, 0xC, 0x44, 0x10C])
             resultName = process.readString(pointerName, 20)
             if resultName != None and len(resultName) > 0:
-                pointerNpcID = process.get_pointer(
+                pointerId = process.get_pointer(
                     _base + 0x003502D4, offsets=[0x210, offset, 0xC, 0x44, 0x4])
-                resultNpcID = process.read(pointerNpcID)
+                resultId = process.read(pointerId)
                 pointerGuildTag = process.get_pointer(
                     _base + 0x003502D4, offsets=[0x210, offset, 0xC, 0x44, 0x13C])
                 resultGuildTag = process.readString(pointerGuildTag, 20)
@@ -627,8 +627,8 @@ def GetEntityData(offset):
                 pointerMaxHP = process.get_pointer(
                     _base + 0x003502D4, offsets=[0x210, offset, 0xC, 0x44, 0x1C])
                 resultMaxHP = process.read(pointerMaxHP)
-                if resultNpcID > 0:
-                    result = {'npcID': resultNpcID, 'name': resultName, 'tag': resultGuildTag, 'coords': (
+                if resultId > 0:
+                    result = {'id': resultId, 'name': resultName, 'tag': resultGuildTag, 'coords': (
                         resultX, resultY), 'hp': (resultHP, resultMaxHP)}
     return result
 
