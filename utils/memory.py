@@ -25,6 +25,7 @@ _armor = 0x2D0  # 8/12
 _weight = 0x2A0  # 8/12
 _target_offset = 0x5F4  # 8/12
 _follower_mode_offset = 0x48  # 8/12
+_follower_id_offset = 0x48  # 9/07
 _follower_hp_offset = 0x4C  # 8/12
 _follower_hp_max_offset = 0x50  # 8/12
 _can_move_offset = 0x678  # 8/14
@@ -232,7 +233,52 @@ def GetMouseId():
     return result
 
 
+def SetMouseX(position=0):
+    result = 0
+    with GameProcess() as process:
+        if process != None:
+            point = process.get_pointer(_base + _base_self, offsets=[0x0680])
+            result = process.write(point, position)
+    return result
+
+
+def SetMouseY(position=0):
+    result = 0
+    with GameProcess() as process:
+        if process != None:
+            point = process.get_pointer(_base + _base_self, offsets=[0x0684])
+            result = process.write(point, position)
+    return result
+
+
+def SetMouseClick(state=0):
+    result = 0
+    with GameProcess() as process:
+        if process != None:
+            point = process.get_pointer(_base + _base_self, offsets=[0x0678])
+            result = process.write(point, state)
+    return result
+
+
 def GetScreen():
+    result = (None, None, None, None)
+    with GameProcess() as process:
+        if process != None:
+            pointLeft = process.get_pointer(_base + 0x003B1AB8, offsets=[0x3C])
+            resultLeft = process.read(pointLeft)
+            pointTop = process.get_pointer(_base + 0x003B1AB8, offsets=[0x40])
+            resultTop = process.read(pointTop)
+            pointRight = process.get_pointer(
+                _base + 0x003B1AB8, offsets=[0x44])
+            resultRight = process.read(pointRight)
+            pointBottom = process.get_pointer(
+                _base + 0x003B1AB8, offsets=[0x48])
+            resultBottom = process.read(pointBottom)
+            result = (resultLeft, resultTop, resultRight, resultBottom)
+    return result
+
+
+def GetGameWindow():
     result = (None, None, None, None)
     with GameProcess() as process:
         if process != None:
@@ -241,10 +287,10 @@ def GetScreen():
             pointTop = process.get_pointer(_base + 0x00351104, offsets=[0x40])
             resultTop = process.read(pointTop)
             pointRight = process.get_pointer(
-                _base + 0x003B1AB8, offsets=[0x44])
+                _base + 0x00351104, offsets=[0x44])
             resultRight = process.read(pointRight)
             pointBottom = process.get_pointer(
-                _base + 0x003B1AB8, offsets=[0x48])
+                _base + 0x00351104, offsets=[0x48])
             resultBottom = process.read(pointBottom)
             result = (resultLeft, resultTop, resultRight, resultBottom)
     return result
@@ -654,6 +700,29 @@ def CheckFollower():
             point = process.get_pointer(
                 _base + _base_follower, offsets=[_follower_mode_offset])
             result = process.read(point)
+    return result
+
+
+def SetFollower(mode: int = 0):
+    # 0 = None, 11 = Follow, 12 = Stay, 13 = Protect, 15 = Guard, 16 = Attack, 17 = Inv, 18 = Flee, 19 = Assist
+    result = 0
+    with GameProcess() as process:
+        if process != None:
+            point = process.get_pointer(
+                _base + _base_follower, offsets=[_follower_mode_offset])
+            result = process.write(point, mode)
+    return result
+
+
+def GetFollowerId():
+    result = 0
+    with GameProcess() as process:
+        if process != None:
+            point = process.get_pointer(
+                _base + _base_follower, offsets=[_follower_id_offset])
+            result = process.read(point)
+            if result == 4294967295:
+                result = 0
     return result
 
 

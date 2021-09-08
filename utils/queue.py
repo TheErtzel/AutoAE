@@ -15,7 +15,10 @@ class LoggerThread(threading.Thread):
                  args=(), kwargs=None, verbose=None):
         super(LoggerThread, self).__init__()
         self.target = target
-        self.name = name
+        if name != None:
+            self.name = name
+        else:
+            self.name = 'LoggerThread'
         self._q = deque([], maxlen=55)
 
         return
@@ -29,7 +32,7 @@ class LoggerThread(threading.Thread):
                 else:
                     time.sleep(0.250)
             except Exception as err:
-                self.add(f'[LoggerQueue] {traceback.format_exc()}')
+                self.add(f'[{self.name}] {traceback.format_exc()}')
 
     def add(self, text: str):
         if not text in self._q:
@@ -38,16 +41,22 @@ class LoggerThread(threading.Thread):
 
 class ConsumerThread(threading.Thread):
     bot = None
-    _q = deque([], 55)
+    _q = deque([], maxlen=55)
     processing = False
 
     def __init__(self, group=None, target=None, name=None,
                  args=(), kwargs=None, verbose=None):
         super(ConsumerThread, self).__init__()
         self.target = target
-        self.name = name
+        if name != None:
+            self.name = name
+        else:
+            self.name = 'ConsumerThread'
         self.bot = kwargs['bot']
-        self._q = deque([], maxlen=55)
+        _maxlen = 55
+        if 'max' in kwargs:
+            _maxlen = int(kwargs['max'])
+        self._q = deque([], maxlen=_maxlen)
         self.processing = False
 
         return
@@ -61,19 +70,23 @@ class ConsumerThread(threading.Thread):
                 else:
                     time.sleep(0.250)
             except Exception as err:
-                self.bot.log(f'[ConsumerQueue] {traceback.format_exc()}')
+                self.bot.log(f'[{self.name}] {traceback.format_exc()}')
 
-    def add(self, name: str):
-        if self.bot.state == 0 or self.bot.state == 'shutdown':
+    def add(self, name: str = '', addToStart: bool = False):
+        if self.bot.state == 0 or self.bot.state == 'shutdown' or name == '':
             return
 
         if not name in self._q:
-            self.bot.log(f'[ConsumerQueue] added: {name}')
-            self._q.append(name)
+            if addToStart:
+                self.bot.log(f'[{self.name}] added to start: {name}')
+                self._q.appendleft(name)
+            else:
+                self.bot.log(f'[{self.name}] added: {name}')
+                self._q.append(name)
 
     def _process(self, name: str = ''):
         self.processing = True
-        self.bot.log(f'[ConsumerQueue] processing: {name}')
+        self.bot.log(f'[{self.name}] processing: {name}')
         if name == 'useHealingPotion':
             logic.useHealingPotion()
         elif name == 'useHealingSpell':
@@ -88,6 +101,10 @@ class ConsumerThread(threading.Thread):
             logic.getEntityToHeal(self.bot)
         elif name == 'getNewTarget':
             logic.getNewTarget(self.bot)
+        elif name == 'healSelectedEntity':
+            logic.healSelectedEntity(self.bot)
+        elif name == 'buffSelectedEntity':
+            logic.buffSelectedEntity(self.bot)
         elif name == 'useFood':
             logic.useFood()
         elif name == 'useRegenerationTotem':
@@ -99,5 +116,5 @@ class ConsumerThread(threading.Thread):
         elif name == 'checkRunes':
             logic.checkRunes(self.bot)
         else:
-            self.bot.log(f'[ConsumerQueue] Unknown item: {name}')
+            self.bot.log(f'[{self.name}] Unknown item: {name}')
         self.processing = False

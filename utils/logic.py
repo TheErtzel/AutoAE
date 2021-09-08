@@ -1,9 +1,10 @@
 import win32api
 import win32con
-import win32gui
 import os
 import time
 import glob
+import math
+import threading
 import pyautogui
 from collections import Counter
 from typing import Union, List, Tuple
@@ -138,13 +139,15 @@ def checkSpellResult():
     checkline = str(chatLogs[0])
     if 'You have cast' in checkline:
         return 1
-    elif 'already has' in checkline:
+    elif 'already has' in checkline or 'does not need' in checkline:
         return 2
     elif 'fizzled' in checkline:
         return 3
     elif 'is too far away' in checkline:
         return 4
-    elif 'You cannot cast' in checkline:
+    elif 'You cannot cast on that object' in checkline:
+        return -1
+    elif 'You cannot cast' in checkline and 'for another' in checkline:
         return 5
     else:
         return 0
@@ -161,6 +164,13 @@ def checkAttackResult():
         return 3
     else:
         return 0
+
+
+def isPetName(name):
+    for pet in consts.PET_NAMES:
+        if name == pet:
+            return True
+    return False
 
 
 def getDistanceApart(sourceCoords: Tuple[Union[int, None]], targetCoords: Tuple[Union[int, None]]):
@@ -194,57 +204,27 @@ def foundIdAtPosition(bot, id: int, x: int, y: int):
     return False
 
 
-def generateNpcRange(baseX: int, baseY: int):
-    npcRange = [(baseX, baseY)]
-    tileWidth = consts.TILE_SIZE[0]
-    tileHeight = consts.TILE_SIZE[1]
-    for x in range(5):
-        for y in range(5):
-            npcRange.append(
-                (baseX - (x * tileWidth), baseY + (y * tileHeight)))
-        for y in range(5):
-            npcRange.append(
-                (baseX + (x * tileWidth), baseY + (y * tileHeight)))
-        for y in range(5):
-            npcRange.append(
-                (baseX - (x * tileWidth), baseY - (y * tileHeight)))
-        for y in range(5):
-            npcRange.append(
-                (baseX + (x * tileWidth), baseY - (y * tileHeight)))
-    return npcRange
-
-
 def clickEntity(bot, id: int, baseX: int, baseY: int, offset: List[int] = [0, 0]):
     if baseX != None and baseY != None:
         foundID = False
         bot.log(
             f'clickEntity [1]: id: {id}, baseX: {baseX}, baseY: {baseY}, offset: {offset}')
 
-        mouseX, mouseY = bot.controller.getCursorPos()
-        foundID = foundIdAtPosition(
-            bot, id, mouseX + offset[0], mouseY + offset[1])
-
         foundID = foundIdAtPosition(
             bot, id, baseX + offset[0], baseY + offset[1])
 
-        if not foundID:
-            npcRange = sort_Tuple(generateNpcRange(
-                bot, baseX, baseY), 1)
-            for nr in npcRange:
-                if foundIdAtPosition(bot, id, nr[0] + offset[0], nr[1] + offset[1]):
-                    foundID = True
-                    break
-
-        bot.log(f'clickEntity [6]: foundID: {foundID}')
-        if foundID:
-            bot.controller.left_mouse_click()
-            time.sleep(0.250)
+        bot.log(f'clickEntity [3]: foundID: {foundID}')
+        # if foundID:
+        bot.controller.left_mouse_click()
+        time.sleep(0.250)
+        return foundID
 
 
 def clickSelf(bot):
-    selfCoords = consts.SELF_COORDS
+    selfCoords = getSelfOnScreenCoords()
     if selfCoords[0] != None:
-        clickLocation(bot, selfCoords[0], selfCoords[1], offset=[0, 0])
+        bot.controller.move_mouse(selfCoords[0], selfCoords[1], False)
+        bot.controller.left_mouse_click()
 
 
 def replaceRunes(bot, ids: List[int]):
@@ -303,7 +283,11 @@ def checkRunes(bot):
 
 
 def getMissingHealthPercentage(value, total):
-    return int(value/total) * 100
+    if value == 0:
+        return 100
+    if total == 0:
+        return 100
+    return int((value/total) * 100)
 
 
 def useHealingPotion():
@@ -426,10 +410,11 @@ def useSpell(bot, spell: int, spellType: int, coords: List[int], offsets: List[i
     bot.controller.move_mouse(coords[0] + offsets[0], coords[1] + [1], False)
     bot.controller.left_mouse_click()
     spellResult = checkSpellResult()
-    if spellResult() == 3:  # fizzled
-        useSpell(bot, spell, spellType, coords, offsets)
-    time.sleep(consts.TIMER_BUFF)
-    checkRunes(bot)
+    if spellResult == 3:  # fizzled
+        return useSpell(bot, spell, spellType, coords, offsets)
+    elif spellResult != 2:
+        time.sleep(3.0)
+        checkRunes(bot)
 
 
 def useHealingSpell(bot):
@@ -438,11 +423,13 @@ def useHealingSpell(bot):
 
     bot.log('[Logic] Casting heal on self')
     clickSelf(bot)
-    if checkSpellResult() == 3:
+    spellResult = checkSpellResult()
+    if spellResult == 3:
         bot.log('[Logic] Superior Heal fizzled! Recasting...')
-        clickSelf(bot)
-    time.sleep(consts.TIMER_SUPERIOR_HEAL)
-    checkRunes(bot)
+        return useHealingSpell(bot)
+    elif spellResult != 2:
+        time.sleep(consts.SpellTimer.SUPERIOR_HEAL)
+        checkRunes(bot)
 
 
 def useCallOfTheGodsSpell(bot):
@@ -451,15 +438,17 @@ def useCallOfTheGodsSpell(bot):
 
     bot.log('[Logic] Casting Call of the Gods on bot')
     clickSelf(bot)
-    if checkSpellResult() == 3:
+    spellResult = checkSpellResult()
+    if spellResult == 3:
         bot.log('[Logic] Call of the Gods fizzled! Recasting...')
         clickSelf(bot)
-    elif checkSpellResult() == 5:
+    elif spellResult == 5:
         bot.log(
             '[Logic] Call of the Gods on cooldown! Switching to Superior Heal')
         return useHealingSpell(bot)
-    time.sleep(consts.TIMER_SUPERIOR_HEAL)
-    checkRunes(bot)
+    elif spellResult != 2:
+        time.sleep(consts.SpellTimer.CALL_OF_THE_GODS)
+        checkRunes(bot)
 
 
 def useStaminaPotion():
@@ -468,31 +457,56 @@ def useStaminaPotion():
     pyautogui.press('f3')
 
 
+def getMiddleOfGameWindow():
+    gameWindow = memory.GetGameWindow()
+    return [(gameWindow[0]+gameWindow[2])/2, (gameWindow[1]+gameWindow[3])/2]
+
+
+def getSelfOnScreenCoords():
+    tileWidth, tileHeight = consts.TILE_SIZE
+    middleOfWindow = getMiddleOfGameWindow()
+    return [int(middleOfWindow[0] + (tileWidth / 2) - 1), int(middleOfWindow[1] - (tileHeight / 2))]
+
+
 def getEntityScreenLocation(bot, entity):
-    selfCoords = consts.SELF_ONSCREEN_COORDS
+    selfCoords = getSelfOnScreenCoords()
     tileWidth, tileHeight = consts.TILE_SIZE
     xDif, yDif = entity['distance']
-
+    tileOffset = 0
     xOffset = 0
     yOffset = 0
-    if xDif < 0:
-        xOffset = -abs(xDif * tileWidth)
-    else:
-        xOffset = abs(xDif * tileWidth)
 
     if yDif < 0:
-        yOffset = -abs(yDif * tileHeight)
+        yOffset = int(-abs(yDif * tileHeight) + (tileHeight / 1.5))
     else:
-        yOffset = abs(yDif * tileHeight)
+        yOffset = int(abs(yDif * tileHeight) - (tileHeight / 1.5))
+
+    if xDif < 0:
+        if yDif < 0:
+            tileOffset = int(abs(yDif) * (tileWidth / 1.4) / 2)
+        else:
+            tileOffset = int(-abs(int(abs(yDif) * (tileWidth / 1.8) / 2)))
+        xOffset = int(-abs((xDif * tileWidth) - tileOffset))
+    else:
+        if yDif < 0:
+            tileOffset = int(abs(yDif) * (tileWidth / 1.4) / 2)
+            xOffset = int(abs((xDif * tileWidth) + tileOffset))
+        elif yDif > 3:
+            tileOffset = int(-abs(abs(yDif / 2) * (tileWidth / 1.55)))
+        else:
+            xOffset = int(abs((xDif * tileWidth)))
 
     bot.log(f'[Logic] getEntityScreenLocation xDif: {xDif}, yDif: {yDif}')
     bot.log(
-        f'[Logic] getEntityScreenLocation xOffset: {xOffset}, yOffset: {yOffset}')
+        f'[Logic] getEntityScreenLocation tileOffset: {tileOffset}, xOffset: {xOffset}, yOffset: {yOffset}')
 
     return {'coords': selfCoords, 'offsets': [xOffset, yOffset]}
 
 
-def buffEntity(bot, player):
+def buffSelectedEntity(bot):
+    entity = bot.selectedEntity
+    if entity == None or bot.state != 1:
+        return
 
     useMagicalWeapon(bot)
 
@@ -501,11 +515,14 @@ def buffEntity(bot, player):
     prepareToBuff(bot)
     if memory.GetSpell() == 0:
         pyautogui.press('f2')
-
-    location = getEntityScreenLocation(bot, player)
+    location = getEntityScreenLocation(bot, entity)
     for _ in range(3):
-        useSpell(bot, consts.Spell.ANARCHY, 5,
-                 location['coords'], offsets=location['offsets'])
+        if bot.state == 1:
+            useSpell(bot, consts.Spell.ANARCHY, 5,
+                     location['coords'], offsets=location['offsets'])
+
+    if bot.state != 1:
+        return
 
     buffs = [consts.Spell.RESPLENDENCE, consts.Spell.ALACRITY, consts.Spell.GRANDEUR, consts.Spell.GAZELLE, consts.Spell.AEGIS, consts.Spell.FAITH,
              consts.Spell.DARK_PRAYER, consts.Spell.BLESSING_OF_ARNA, consts.Spell.BULWARK_MIGHT, consts.Spell.HOLY_AURA, consts.Spell.FORTIFY]
@@ -513,33 +530,77 @@ def buffEntity(bot, player):
     bot.log(f'[Logic] Casting buffs')
     prepareToBuff(bot)
 
-    location = getEntityScreenLocation(bot, player)
+    if bot.state != 1:
+        return
+
+    location = getEntityScreenLocation(bot, entity)
     for spell in range(len(buffs)-1):
-        useSpell(bot, spell, 5,
-                 location['coords'], offsets=location['offsets'])
+        if bot.state == 1:
+            useSpell(bot, spell, 5,
+                     location['coords'], offsets=location['offsets'])
+
+    bot.selectedEntity = None
 
 
-def healEntity(bot, player):
+def healSelectedEntity(bot):
+    bot.log(
+        f'[Logic] healSelectedEntity: {bot.selectedEntity}')
+    entity = bot.selectedEntity
+    if entity == None or bot.state != 1:
+        return
+
+    bot.log(
+        f'[Logic] healSelectedEntity prepareing to heal')
     prepareToHeal(bot)
 
-    while memory.GetSpell() != consts.Spell.SUPERIOR_HEAL:
+    bot.log(
+        f'[Logic] healSelectedEntity selecting spell')
+
+    while memory.GetSpell() != consts.Spell.SUPERIOR_HEAL and bot.state == 1:
         pyautogui.press('f2')
         time.sleep(0.250)
 
+    if bot.state != 1:
+        return
+
     bot.log(
-        f'[Logic] Casting superior heal on player [{player["name"]}] ({player["percentage"]}%)')
-    location = getEntityScreenLocation(bot, player)
-    clickEntity(bot, player['id'], location['coords'][0],
-                location['coords'][1], offset=location['offsets'])
+        f'[Logic] Casting superior heal on [{entity["name"]}] ({entity["percentage"]}%)')
 
-    if checkSpellResult() == 3:
-        bot.log('[Logic] Spell fizzled! Recasting...')
-        location = getEntityScreenLocation(bot, player)
-        clickEntity(bot, player['id'], location['coords'][0],
-                    location['coords'][1], offset=location['offsets'])
+    location = getEntityScreenLocation(bot, entity)
+    entityFound = clickEntity(bot, entity['id'], location['coords'][0],
+                              location['coords'][1], offset=location['offsets'])
 
-    time.sleep(consts.TIMER_SUPERIOR_HEAL)
-    checkRunes(bot)
+    if not entityFound or bot.state != 1:
+        bot.selectedEntity = None
+        return
+
+    spellResult = checkSpellResult()
+
+    if spellResult == -1:
+        bot.non_player_ids.append(entity['id'])
+    elif spellResult == 3:
+        bot.log('[Logic] Superior heal fizzled!')
+        bot.workerQ.add(name='healSelectedEntity', addToStart=True)
+        return
+    elif spellResult == 4 or spellResult == 5:
+        def removeIgnored(**kwargs):
+            if 'bot' in kwargs and 'id' in kwargs:
+                kwargs['bot'].log(
+                    f'[Logic] Removed {entity["name"]} from temporary ignore list')
+                kwargs['bot'].ignored_ids.remove(kwargs['entity']['id'])
+
+        bot.log(f'[Logic] Added {entity["name"]} to temporary ignore list')
+        bot.ignored_ids.append(entity['id'])
+        # Remove entity id from ignore list after 10 seconds
+        threading.Timer(interval=10, function=removeIgnored,
+                        kwargs={'bot': bot, 'entity': entity}).start()
+    else:
+        if spellResult != 2:
+            time.sleep(consts.SpellTimer.SUPERIOR_HEAL)
+            bot.selectedEntity = None
+            checkRunes(bot)
+        else:
+            bot.selectedEntity = None
 
 
 def useFood():
@@ -604,50 +665,60 @@ def getNewTarget(bot):
 
 def getEntityToHeal(bot):
     entities_on_screen = bot.entities_on_screen
-    if len(entities_on_screen) == 0:
+    if len(entities_on_screen) == 0 or bot.state != 1:
         return
 
-    memberToHeal = {'percentage': 100}
     bot.log(
-        '[Logic] Checking for the entity on-screen with the lowest health percentage level...')
-    for entity in entities_on_screen:
-        if bot.state != 1:
-            break
+        '[Logic] Checking for the entity on-screen in need of healing...')
 
-        percentage = entity['percentage']
-        if percentage == None or percentage == 100:
-            continue
+    entity = entities_on_screen[0]
+    # for e in entities_on_screen:
+    #    if 'Town Guardian' == e['name']:
+    #        entity = e
+    #        break
 
-        if percentage > memberToHeal['percentage']:
-            memberToHeal = entity
-
-    if 'name' in memberToHeal:
-        entityName = memberToHeal["name"]
+    # if entity['percentage'] <= 100:
+    if entity['percentage'] <= 95:
         bot.log(
-            f'[Logic] Entity to heal: {entityName} ({memberToHeal["percentage"]}%)')
-        healEntity(bot, memberToHeal)
+            f'[Logic] Entity to heal: {entity["name"]} ({entity["percentage"]}%)')
+        bot.selectedEntity = entity
+        bot.workerQ.add(name='healSelectedEntity', addToStart=True)
     else:
         bot.log(
-            f'[Logic] Failed to find any entities needing healing on the screen')
+            f'[Logic] Failed to find any entities in need of healing on the screen')
 
 
 def getEntitiesOnScreen(bot):
-    bot.log(f'[Logic] Updating entities on the screen...')
+    non_player_ids = bot.non_player_ids
+    ignored_ids = bot.ignored_ids
+    if bot.state != 1:
+        return
 
+    bot.log(f'[Logic] Updating entities on the screen...')
     selfLoc = memory.GetLocation()
     entities = []
-    offset = consts.SCREEN_HEX[0]
-    while offset < consts.SCREEN_HEX[1]:
-        entity = memory.GetEntityData(offset)
-        if entity['id'] != 0 and entity['name'] != '':
-            distance = getDistanceApart(selfLoc, entity['coords'])
-            if distance[0] <= 14 and distance[0] >= -13 and distance[1] <= 12 and distance[1] >= -12:
-                curHP, maxHP = entity['hp']
-                entity['distance'] = distance
-                entity['percentage'] = getMissingHealthPercentage(curHP, maxHP)
-                entities.append(entity)
-        offset = offset + 4
+    for offset in consts.SCREEN_ENTITY_OFFSETS:
+        if bot.state != 1:
+            break
+        for i in range(1):
+            if bot.state != 1:
+                break
 
-    bot.entities_on_screen = filter(entities, 'id')
-    bot.log(
-        f'[Logic] Found {len(bot.entities_on_screen)} entities on the screen...')
+            hexCode = hex(offset + (i * 4))
+            entity = memory.GetEntityData(hexCode)
+            _id = entity['id']
+            if _id == 0 or entity['name'] == '' or entity['tag'] == '' or isPetName(entity['name']) or _id in non_player_ids or _id in ignored_ids:
+                break
+
+            distance = getDistanceApart(
+                selfLoc, entity['coords'])
+            if distance[0] <= 14 and distance[0] >= -13 and distance[1] <= 12 and distance[1] >= -12:
+                entity['distance'] = distance
+                entity['percentage'] = getMissingHealthPercentage(
+                    entity['hp'][0], entity['hp'][1])
+                entities.append(entity)
+
+    bot.entities_on_screen = sortBy(filter(entities, 'id'), 'percentage')
+    if len(bot.entities_on_screen) > 0:
+        bot.log(
+            f'[Logic] Found {flatten(bot.entities_on_screen, "name")} on the screen...')

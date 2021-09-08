@@ -19,6 +19,8 @@ class HealerThread(threading.Thread):
     cog_timeout: bool = False
     last_poison_disease: int = 0
     entities_on_screen = []
+    selectedEntity = None
+    ignored_ids = []
 
     def __init__(self, group=None, target=None, name=None,
                  args=(), kwargs=None, verbose=None):
@@ -27,13 +29,14 @@ class HealerThread(threading.Thread):
         self.name = name
         self.state = 0
         self.controller = kwargs['controller']
-        self.loggerQ = LoggerThread()
+        self.loggerQ = LoggerThread(name='LoggerQueue')
         self.loggerQ.setDaemon(True)
         self.loggerQ.start()
-        self.workerQ = ConsumerThread(kwargs={'bot': self})
+        self.workerQ = ConsumerThread(name='WorkerQueue', kwargs={'bot': self})
         self.workerQ.setDaemon(True)
         self.workerQ.start()
-        self.backgroundQ = ConsumerThread(kwargs={'bot': self})
+        self.backgroundQ = ConsumerThread(
+            name='BackgroundQueue', kwargs={'bot': self, 'max': 10})
         self.backgroundQ.setDaemon(True)
         self.backgroundQ.start()
         self.process_found = False
@@ -41,10 +44,15 @@ class HealerThread(threading.Thread):
         self.cog_timeout = False
         self.last_poison_disease = 0
         self.entities_on_screen = []
+        self.non_player_ids = []
+        self.selectedEntity = None
+        self.ignored_ids = []
 
         keyboard.add_hotkey('pause', self.toggle_pause)
         keyboard.add_hotkey('ctrl+n', self.checkMouseId)
         keyboard.add_hotkey('ctrl+insert', self.entityData)
+        keyboard.add_hotkey('ctrl+end', self.setProtect)
+        keyboard.add_hotkey('ctrl+alt', self.getSelectedEntity)
 
     def log(self, text):
         self.loggerQ.add(text)
@@ -78,7 +86,8 @@ class HealerThread(threading.Thread):
         self.cog_timeout = False
 
     def checkOwnHealth(self):
-        healthPercentage = logic.getMissingHealthPercentage()
+        healthPercentage = logic.getMissingHealthPercentage(
+            memory.GetCurHealth(), memory.GetMaxHealth())
         if healthPercentage < 100:
             self.log(f'[Healer] Health: {healthPercentage}%')
 
@@ -109,18 +118,42 @@ class HealerThread(threading.Thread):
         self.backgroundQ.add('getEntitiesOnScreen')
 
     def checkEntityToHeal(self):
-        if len(self.entities_on_screen) > 0:
+        if self.selectedEntity == None:
             self.workerQ.add('getEntityToHeal')
 
     def checkMouseId(self):
         id = memory.GetMouseId()
         self.log(f'[Healer] GetMouseId: {id}')
+        gameWindow = logic.getMiddleOfGameWindow()
+        self.log(f'[Healer] getMiddleOfGameWindow: {gameWindow}')
+        selfCoords = logic.getSelfOnScreenCoords()
+        self.log(f'[Healer] getSelfOnScreenCoords: {selfCoords}')
 
     def entityData(self):
         entities = []
         selfLoc = memory.GetLocation()
+        self.log(f'[Healer] Getting entities on screen...')
+        for offset in consts.SCREEN_ENTITY_OFFSETS:
+            for i in range(1):
+                hexCode = hex(offset + (i * 4))
+                entity = memory.GetEntityData(hexCode)
+                if entity['id'] != 0 and entity['name'] != '' and not logic.isPetName(entity['name']):
+                    distance = logic.getDistanceApart(
+                        selfLoc, entity['coords'])
+                    if distance[0] <= 14 and distance[0] >= -13 and distance[1] <= 12 and distance[1] >= -12:
+                        entity['distance'] = distance
+                        entity['percentage'] = logic.getMissingHealthPercentage(
+                            entity['hp'][0], entity['hp'][1])
+                        entities.append(entity)
+        entities = logic.sortBy(logic.filter(
+            entities, 'id'), 'percentage')
+        self.log(
+            f'[Healer] entityData names: {logic.flatten(entities, "name")}')
+        self.log(
+            f'[Healer] entityData percentages: {logic.flatten(entities, "percentage")}')
+
         offset = consts.SCREEN_HEX[0]
-        self.log(f'[Attacker] Getting entities on screen...')
+        self.log(f'[Healer] [2] Getting entities on screen...')
         while offset < consts.SCREEN_HEX[1]:
             entity = memory.GetEntityData(offset)
             if entity['id'] != 0 and entity['name'] != '':
@@ -132,31 +165,18 @@ class HealerThread(threading.Thread):
                     entities.append(entity)
             offset += 4
         entities = logic.sortBy(logic.filter(
-            entities, 'name'), 'percentage', True)
+            entities, 'id'), 'percentage')
         self.log(
-            f'[Attacker] GetEntityNames: {entities}')
+            f'[Healer] [2] entityData names: {logic.flatten(entities, "name")}')
         self.log(
-            f'[Attacker] GetEntityPercentages: {logic.flatten(entities, "percentage")}')
+            f'[Healer] [2] entityData percentages: {logic.flatten(entities, "percentage")}')
 
-        self.log(f'[Attacker] (2) Getting entities on screen...')
-        for offset in consts.SCREEN_ENTITY_OFFSETS:
-            for i in range(1):
-                hexCode = hex(offset + (i * 4))
-                entity = memory.GetEntityData(hexCode)
-                if entity['id'] != 0 and entity['name'] != '':
-                    distance = logic.getDistanceApart(
-                        selfLoc, entity['coords'])
-                    if distance[0] <= 14 and distance[0] >= -13 and distance[1] <= 12 and distance[1] >= -12:
-                        entity['distance'] = distance
-                        entity['percentage'] = logic.getMissingHealthPercentage(
-                            entity['hp'][0], entity['hp'][1])
-                        entities.append(entity)
-        entities = logic.sortBy(logic.filter(
-            entities, 'name'), 'percentage', True)
-        self.log(
-            f'[Attacker] (2) GetEntityNames: {logic.flatten(entities, "name")}')
-        self.log(
-            f'[Attacker] (2) GetEntityPercentages: {logic.flatten(entities, "percentage")}')
+    def setProtect(self):
+        if memory.GetFollowerId() > 0:
+            memory.SetFollower(13)
+
+    def getSelectedEntity(self):
+        self.log(f'[Healer] SelectedEntity: {self.selectedEntity}')
 
     def checkSystemMessage(self):
         message = memory.CheckSystemMessage()
