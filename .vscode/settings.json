@@ -4,14 +4,18 @@
     "hwnd",
     "isdigit",
     "Isos",
+    "KEYEVENTF",
     "KEYUP",
+    "LEFTUP",
     "malenox",
     "malith",
+    "MOUSEEVENTF",
     "onvalue",
     "padx",
     "pady",
     "pyautogui",
     "pyscreenshot",
+    "RIGHTUP",
     "Sabal",
     "Ulthien"
   ]

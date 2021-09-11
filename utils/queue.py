@@ -23,6 +23,10 @@ class LoggerThread(threading.Thread):
 
         return
 
+    def add(self, text: str):
+        if not text in self._q:
+            self._q.append(text)
+
     def run(self):
         while True:
             try:
@@ -33,10 +37,6 @@ class LoggerThread(threading.Thread):
                     time.sleep(0.250)
             except Exception as err:
                 self.add(f'[{self.name}] {traceback.format_exc()}')
-
-    def add(self, text: str):
-        if not text in self._q:
-            self._q.append(text)
 
 
 class ConsumerThread(threading.Thread):
@@ -61,16 +61,40 @@ class ConsumerThread(threading.Thread):
 
         return
 
-    def run(self):
-        while not self.bot.state == 'shutdown':
-            try:
-                if len(self._q) > 0 and not self.bot.state == 0 and not self.processing:
-                    item = self._q.popleft()
-                    self._process(item)
-                else:
-                    time.sleep(0.250)
-            except Exception as err:
-                self.bot.log(f'[{self.name}] {traceback.format_exc()}')
+    def _process(self, name: str = ''):
+        self.processing = True
+        self.bot.log(f'[{self.name}] processing: {name}')
+        if name == 'use_healing_potion':
+            logic.use_healing_potion()
+        elif name == 'use_healing_spell':
+            logic.use_healing_spell(self.bot)
+        elif name == 'use_call_of_the_gods_spell':
+            logic.use_call_of_the_gods_spell(self.bot)
+        elif name == 'use_stamina_potion':
+            logic.use_stamina_potion()
+        elif name == 'get_entities_on_screen':
+            logic.get_entities_on_screen(self.bot)
+        elif name == 'get_entity_to_heal':
+            logic.get_entity_to_heal(self.bot)
+        elif name == 'target_new_enemy':
+            logic.target_new_enemy(self.bot)
+        elif name == 'heal_selected_entity':
+            logic.heal_selected_entity(self.bot)
+        elif name == 'buff_selected_entity':
+            logic.buff_selected_entity(self.bot)
+        elif name == 'use_food':
+            logic.use_food()
+        elif name == 'use_regeneration_totem':
+            logic.use_regeneration_totem()
+        elif name == 'use_class_totem':
+            logic.use_class_totem()
+        elif name == 'use_werewolf_totem':
+            logic.use_werewolf_totem()
+        elif name == 'check_runes':
+            logic.check_runes(self.bot)
+        else:
+            self.bot.log(f'[{self.name}] Unknown item: {name}')
+        self.processing = False
 
     def add(self, name: str = '', addToStart: bool = False):
         if self.bot.state == 0 or self.bot.state == 'shutdown' or name == '':
@@ -84,37 +108,13 @@ class ConsumerThread(threading.Thread):
                 self.bot.log(f'[{self.name}] added: {name}')
                 self._q.append(name)
 
-    def _process(self, name: str = ''):
-        self.processing = True
-        self.bot.log(f'[{self.name}] processing: {name}')
-        if name == 'useHealingPotion':
-            logic.useHealingPotion()
-        elif name == 'useHealingSpell':
-            logic.useHealingSpell(self.bot)
-        elif name == 'useCallOfTheGodsSpell':
-            logic.useCallOfTheGodsSpell(self.bot)
-        elif name == 'useStaminaPotion':
-            logic.useStaminaPotion()
-        elif name == 'getEntitiesOnScreen':
-            logic.getEntitiesOnScreen(self.bot)
-        elif name == 'getEntityToHeal':
-            logic.getEntityToHeal(self.bot)
-        elif name == 'getNewTarget':
-            logic.getNewTarget(self.bot)
-        elif name == 'healSelectedEntity':
-            logic.healSelectedEntity(self.bot)
-        elif name == 'buffSelectedEntity':
-            logic.buffSelectedEntity(self.bot)
-        elif name == 'useFood':
-            logic.useFood()
-        elif name == 'useRegenerationTotem':
-            logic.useRegenerationTotem()
-        elif name == 'useClassTotem':
-            logic.useClassTotem()
-        elif name == 'useWerewolfTotem':
-            logic.useWerewolfTotem()
-        elif name == 'checkRunes':
-            logic.checkRunes(self.bot)
-        else:
-            self.bot.log(f'[{self.name}] Unknown item: {name}')
-        self.processing = False
+    def run(self):
+        while not self.bot.state == 'shutdown':
+            try:
+                if len(self._q) > 0 and not self.bot.state == 0 and not self.processing:
+                    item = self._q.popleft()
+                    self._process(item)
+                else:
+                    time.sleep(0.250)
+            except Exception as err:
+                self.bot.log(f'[{self.name}] {traceback.format_exc()}')
