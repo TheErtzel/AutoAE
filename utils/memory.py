@@ -1,17 +1,19 @@
 from ReadWriteMemory import ReadWriteMemory
-from typing import Any, List, Tuple, Dict
+from typing import Any, List, Tuple, Dict, Union
 
-# Hex Codes
-_base = 0x400000  # 8/11
-_base_self = 0x00351100  # 8/11
-_base_location = 0x003502D4  # 8/12
-_base_follower = 0x00350F54  # 8/12
-_base_gui = 0x003B1AB8  # 8/13
-_base_Rune = 0x03B1B44  # 8/11
-_base_Rune_slots = 0x03B1B48  # 8/13
-_base_hotbar = 0x00351158  # 8/12
-_base_spell = 0x3B1B48  # 8/13
-_base_spell_type = 0x003B1A68  # 8/13
+# Hex Codes             hex + 1000
+_base = 0x400000  # 9/20
+_base_self = 0x00353100  # 9/20
+_base_entity = 0x003522D4  # 9/20
+_base_follower = 0x00352F54  # 9/20
+_base_gui = 0x003B3AB8  # 9/20
+_base_hotbar = 0x00352158  # 9/20
+_base_rune_type = 0x003B3B44  # 9/20
+_base_rune_charge = 0x003B3B48  # 9/20
+_base_spell = 0x003B3B48  # 9/20
+_base_spell_type = 0x003B3A68  # 9/20
+_base_game_window = 0x00353104  # 9/20
+
 _z_offset = 0x2F0  # 8/24
 _x_offset = 0x2F4  # 5/11
 _y_offset = 0x2F8  # 5/11
@@ -21,9 +23,10 @@ _level_offset = 0x444  # 8/12
 _max_health = 0x29C  # 8/11
 _cur_health = 0x298  # 8/11
 _stamina = 0x4A4  # 8/11
-_stamina_regen = 0x578  # 8/12
+_stamina_regen = 0x57C  # 9/18
 _armor = 0x2D0  # 8/12
 _weight = 0x2A0  # 8/12
+_message_offset = 0x003B1B50  # 9/17
 _target_offset = 0x5F4  # 8/12
 _follower_mode_offset = 0x48  # 8/12
 _follower_id_offset = 0x0  # 10/09
@@ -31,10 +34,6 @@ _follower_hp_offset = 0x4C  # 8/12
 _follower_hp_max_offset = 0x50  # 8/12
 _can_move_offset = 0x678  # 8/14
 _party_count_offset = 0x138  # 8/13
-_party_member_offset = 0x134  # 8/24
-_party_member_x_offset = 0x44  # 8/24
-_party_member_y_offset = 0x48  # 8/24
-_party_member_z_offset = 0x4C  # 8/24
 _hotbar_offset = 0x4  # 8/12
 _poison_disease_offset = 0x580  # 8/13
 _spell_offset = 0x10808  # 8/13
@@ -156,7 +155,7 @@ def get_own_y() -> int:
     with GameProcess() as process:
         if process != None:
             point = process.get_pointer(
-                _base + _base_location, offsets=[_y_offset])
+                _base + _base_entity, offsets=[_y_offset])
             result = process.read(point)
     return result
 
@@ -166,7 +165,7 @@ def get_own_x() -> int:
     with GameProcess() as process:
         if process != None:
             point = process.get_pointer(
-                _base + _base_location, offsets=[_x_offset])
+                _base + _base_entity, offsets=[_x_offset])
             result = process.read(point)
     return result
 
@@ -176,7 +175,7 @@ def get_own_z() -> int:
     with GameProcess() as process:
         if process != None:
             point = process.get_pointer(
-                _base + _base_location, offsets=[_z_offset])
+                _base + _base_entity, offsets=[_z_offset])
             result = process.read(point)
     return result
 
@@ -186,13 +185,13 @@ def get_own_location() -> Tuple:
     with GameProcess() as process:
         if process != None:
             pointX = process.get_pointer(
-                _base + _base_location, offsets=[_x_offset])
+                _base + _base_entity, offsets=[_x_offset])
             resultX = process.read(pointX)
             pointY = process.get_pointer(
-                _base + _base_location, offsets=[_y_offset])
+                _base + _base_entity, offsets=[_y_offset])
             resultY = process.read(pointY)
             pointZ = process.get_pointer(
-                _base + _base_location, offsets=[_z_offset])
+                _base + _base_entity, offsets=[_z_offset])
             resultZ = process.read(pointZ)
             result = (resultX, resultY, resultZ)
     return result
@@ -265,7 +264,7 @@ def get_screen() -> Tuple:
     result: tuple = (None, None, None, None)
     with GameProcess() as process:
         if process != None:
-            pointLeft = process.get_pointer(_base + _base_gui, offsets=[0x3C])
+            pointLeft = process.get_pointer(_base + _base_gui, offsets=[0x30])
             resultLeft = process.read(pointLeft)
             pointTop = process.get_pointer(_base + _base_gui, offsets=[0x40])
             resultTop = process.read(pointTop)
@@ -283,15 +282,17 @@ def get_game_window() -> Tuple:
     result: tuple = (None, None, None, None)
     with GameProcess() as process:
         if process != None:
-            pointLeft = process.get_pointer(_base + 0x00351104, offsets=[0x3C])
+            pointLeft = process.get_pointer(
+                _base + _base_game_window, offsets=[0x3C])
             resultLeft = process.read(pointLeft)
-            pointTop = process.get_pointer(_base + 0x00351104, offsets=[0x40])
+            pointTop = process.get_pointer(
+                _base + _base_game_window, offsets=[0x40])
             resultTop = process.read(pointTop)
             pointRight = process.get_pointer(
-                _base + 0x00351104, offsets=[0x44])
+                _base + _base_game_window, offsets=[0x44])
             resultRight = process.read(pointRight)
             pointBottom = process.get_pointer(
-                _base + 0x00351104, offsets=[0x48])
+                _base + _base_game_window, offsets=[0x48])
             resultBottom = process.read(pointBottom)
             result = (resultLeft, resultTop, resultRight, resultBottom)
     return result
@@ -631,7 +632,7 @@ def get_party_members_name(index: int) -> str:
     return result
 
 
-def get_party_members_data(index: int) -> Dict[str, Any]:
+def get_party_members_data(index: int) -> Dict[str, Union[int, str, Tuple]]:
     offsets: List[int] = [0]
     for i in range(index):
         offsets.append(0)
@@ -659,32 +660,32 @@ def get_party_members_data(index: int) -> Dict[str, Any]:
     return result
 
 
-def get_entity_data(offset: bytes) -> Dict[str, Any]:
+def get_entity_data(offset: bytes) -> Dict[str, Union[int, str, Tuple]]:
     result = {'id': 0, 'name': '', 'tag': '',
               'coords': (0, 0), 'hp': (0, 0)}
     with GameProcess() as process:
         if process != None:
             pointerName = process.get_pointer(
-                _base + 0x003502D4, offsets=[0x210, offset, 0xC, 0x44, 0x10C])
+                _base + _base_entity, offsets=[0x210, offset, 0xC, 0x44, 0x10C])
             resultName = process.readString(pointerName, 20)
             if resultName != None and len(resultName) > 0:
                 pointerId = process.get_pointer(
-                    _base + 0x003502D4, offsets=[0x210, offset, 0xC, 0x44, 0x4])
+                    _base + _base_entity, offsets=[0x210, offset, 0xC, 0x44, 0x4])
                 resultId = process.read(pointerId)
                 pointerGuildTag = process.get_pointer(
-                    _base + 0x003502D4, offsets=[0x210, offset, 0xC, 0x44, 0x13C])
+                    _base + _base_entity, offsets=[0x210, offset, 0xC, 0x44, 0x13C])
                 resultGuildTag = process.readString(pointerGuildTag, 20)
                 pointerX = process.get_pointer(
-                    _base + 0x003502D4, offsets=[0x210, offset, 0xC, 0x44, 0xC])
+                    _base + _base_entity, offsets=[0x210, offset, 0xC, 0x44, 0xC])
                 resultX = process.read(pointerX)
                 pointerY = process.get_pointer(
-                    _base + 0x003502D4, offsets=[0x210, offset, 0xC, 0x44, 0x10])
+                    _base + _base_entity, offsets=[0x210, offset, 0xC, 0x44, 0x10])
                 resultY = process.read(pointerY)
                 pointerHP = process.get_pointer(
-                    _base + 0x003502D4, offsets=[0x210, offset, 0xC, 0x44, 0x18])
+                    _base + _base_entity, offsets=[0x210, offset, 0xC, 0x44, 0x18])
                 resultHP = process.read(pointerHP)
                 pointerMaxHP = process.get_pointer(
-                    _base + 0x003502D4, offsets=[0x210, offset, 0xC, 0x44, 0x1C])
+                    _base + _base_entity, offsets=[0x210, offset, 0xC, 0x44, 0x1C])
                 resultMaxHP = process.read(pointerMaxHP)
                 if resultId > 0:
                     result = {'id': resultId, 'name': resultName, 'tag': resultGuildTag, 'coords': (
@@ -762,7 +763,7 @@ def get_system_message() -> str:
     result: str = ''
     with GameProcess() as process:
         if process != None:
-            point = process.get_pointer(_base + 0x003B1B50)
+            point = process.get_pointer(_base + _message_offset)
             result = process.readString(point, 500)
     return result
 
@@ -771,6 +772,6 @@ def get_guild_message() -> str:
     result: str = ''
     with GameProcess() as process:
         if process != None:
-            point = process.get_pointer(_base + 0x003B1B50)
+            point = process.get_pointer(_base + _message_offset)
             result = process.readString(point, 500)
     return result

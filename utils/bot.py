@@ -1,34 +1,17 @@
 import time
-import threading
-from typing import Any, Union, Dict, List
+from typing import Union
 
 import utils.constants as consts
 import utils.memory as memory
 import utils.logic as logic
-from utils.queue import LoggerThread, ConsumerThread
+from utils.types import Bot
 
 
-class BotThread(threading.Thread):
-    name: str = 'Bot'
-    state: str = 0
-    logger_queue: LoggerThread = None
-    worker_queue: ConsumerThread = None
-    background_queue: ConsumerThread = None
-    process_found: bool = False
-    usedSpell: bool = False
-    cog_timeout: bool = False
-    last_poison_disease: int = 0
-    looking_for_target: bool = False
-    entities_on_screen: List[Dict[str, Any]] = []
-    selected_entity: Union[Dict[str, Any], None] = None
-    ignored_ids: List[int] = []
-
-    def __init__(self, name=None):
+class BotThread(Bot):
+    def __init__(self, name: Union[str, None] = None):
         super(BotThread, self).__init__()
-        self.name = name
-
-    def log(self, text: str) -> None:
-        self.logger_queue.add(text)
+        if name != None:
+            self.name = name
 
     def setState(self, state: int) -> None:
         if not self.state == 0:
@@ -116,6 +99,12 @@ class BotThread(threading.Thread):
             f'[{self.name}] entity_data names: {logic.flatten(entities, "name")}')
         self.log(
             f'[{self.name}] entity_data percentages: {logic.flatten(entities, "percentage")}')
+
+    def buff_mouse_entity(self) -> None:
+        self.worker_queue.add('buff_mouse_entity')
+
+    def buff_selected_entity(self) -> None:
+        self.worker_queue.add('buff_selected_entity')
 
     def set_protect(self) -> None:
         if memory.get_follower_id() > 0:

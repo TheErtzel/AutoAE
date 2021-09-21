@@ -32,6 +32,7 @@ class AttackerThread(BotThread):
         keyboard.add_hotkey('pause', self.toggle_pause)
         keyboard.add_hotkey('ctrl+n', self.check_mouse_id)
         keyboard.add_hotkey('ctrl+insert', self.entity_data)
+        keyboard.add_hotkey('ctrl+delete', self.buff_mouse_entity)
         keyboard.add_hotkey('ctrl+end', self.set_protect)
         keyboard.add_hotkey('ctrl+alt', self.get_selected_entity)
 
@@ -50,8 +51,8 @@ class AttackerThread(BotThread):
                 self.check_game()
                 if self.process_found:
                     _tick += 1
-                    threading.Thread(target=self.check_system_message).start()
-                    threading.Thread(target=self.check_guild_message).start()
+                    # threading.Thread(target=self.check_system_message).start()
+                    # threading.Thread(target=self.check_guild_message).start()
                     threading.Thread(
                         target=self.check_totems_and_food).start()
                     threading.Thread(target=self.check_target).start()

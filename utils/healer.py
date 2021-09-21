@@ -35,7 +35,8 @@ class HealerThread(BotThread):
         keyboard.add_hotkey('pause', self.toggle_pause)
         keyboard.add_hotkey('ctrl+n', self.check_mouse_id)
         keyboard.add_hotkey('ctrl+insert', self.entity_data)
-        keyboard.add_hotkey('ctrl+end', self.set_protect)
+        keyboard.add_hotkey('ctrl+delete', self.buff_mouse_entity)
+        keyboard.add_hotkey('ctrl+end', self.buff_selected_entity)
         keyboard.add_hotkey('ctrl+alt', self.get_selected_entity)
 
     def check_entities_on_screen(self) -> None:
@@ -55,10 +56,9 @@ class HealerThread(BotThread):
                 self.check_game()
                 if self.process_found:
                     _tick += 1
-                    threading.Thread(target=self.check_system_message).start()
-                    threading.Thread(target=self.check_guild_message).start()
-                    threading.Thread(
-                        target=self.check_totems_and_food).start()
+                    # threading.Thread(target=self.check_system_message).start()
+                    # threading.Thread(target=self.check_guild_message).start()
+                    threading.Thread(target=self.check_totems_and_food).start()
 
                     if (_tick % 2) == 0:
                         threading.Thread(

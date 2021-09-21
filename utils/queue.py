@@ -80,6 +80,8 @@ class ConsumerThread(threading.Thread):
             logic.target_new_enemy(self.bot)
         elif name == 'heal_selected_entity':
             logic.heal_selected_entity(self.bot)
+        elif name == 'buff_mouse_entity':
+            logic.buff_mouse_entity(self.bot)
         elif name == 'buff_selected_entity':
             logic.buff_selected_entity(self.bot)
         elif name == 'use_food':

@@ -5,6 +5,7 @@ import time
 import glob
 import threading
 import pyautogui
+import traceback
 from collections import Counter
 from typing import Any, Union, List, Tuple, Dict
 
@@ -13,6 +14,7 @@ import utils.memory as memory
 import utils.window as window
 import utils.keyboard as keyboard
 import utils.controller as controller
+from utils.types import Bot
 
 
 def send_text(msg: str) -> None:
@@ -82,12 +84,17 @@ def sort_by(source: List, key: str, reverse: bool = False) -> List:
 
 def remove_from_array(source: List = [], element: Union[Any, None] = None) -> List:
     result = []
+    if element == None:
+        return result
+
     if element in source:
         result = source.remove(element)
     else:
         for e in source:
             if e != element:
                 result.append(e)
+    if result == None:
+        result = []
     return result
 
 
@@ -169,7 +176,7 @@ def get_attack_result() -> int:
         return 0
 
 
-def is_known_pet(name) -> bool:
+def is_known_pet(name: str) -> bool:
     for pet in consts.PET_NAMES:
         if name == pet:
             return True
@@ -224,11 +231,11 @@ def click_entity(id: int, baseX: int, baseY: int, offset: List[int] = [0, 0]) ->
 def click_self() -> None:
     selfCoords = get_own_screen_coords()
     if selfCoords[0] != None:
-        controller.move_mouse(selfCoords[0], selfCoords[1] + 35, False)
+        controller.move_mouse(selfCoords[0], selfCoords[1], False)
         controller.left_mouse_click()
 
 
-def replace_runes(bot, ids: List[int]) -> None:
+def replace_runes(bot: Bot, ids: List[int]) -> None:
     if memory.get_hotbar() != 8:
         memory.set_hotbar(8)
 
@@ -266,7 +273,7 @@ def replace_runes(bot, ids: List[int]) -> None:
     time.sleep(0.250)
 
 
-def check_runes(bot) -> None:
+def check_runes(bot: Bot) -> None:
     rune_slots = memory.get_rune_slots()
     indexes = []
 
@@ -297,7 +304,7 @@ def use_healing_potion() -> None:
     pyautogui.press('f4')
 
 
-def use_magical_weapon(bot) -> None:
+def use_magical_weapon(bot: Bot) -> None:
     rune_slots = memory.get_rune_slots()
 
     if memory.get_hotbar() != 8:
@@ -315,25 +322,7 @@ def use_magical_weapon(bot) -> None:
         time.sleep(0.250)
 
 
-def use_body_rune(bot) -> None:
-    rune_types = memory.get_rune_types()
-
-    if memory.get_hotbar() != 8:
-        bot.log('[Logic] Switching to hotbar #8')
-        memory.set_hotbar(8)
-
-    # If we aren't using a body Rune, switch to one
-    if len(rune_types) > 0 and rune_types[0] != consts.Rune.BODY:
-        bot.log('[Logic] Switching Rune slot 0 to body')
-        pyautogui.keyDown('shift')
-        time.sleep(0.250)
-        pyautogui.press('f5')
-        time.sleep(0.250)
-        pyautogui.keyUp('shift')
-        time.sleep(0.250)
-
-
-def use_rune(bot, rune_type: int) -> None:
+def use_rune(bot: Bot, rune_type: int) -> None:
     rune_types = memory.get_rune_types()
 
     if memory.get_hotbar() != 9:
@@ -357,7 +346,7 @@ def use_rune(bot, rune_type: int) -> None:
         time.sleep(0.250)
 
 
-def use_none_magical_weapon(bot) -> None:
+def use_none_magical_weapon(bot: Bot) -> None:
     RuneSlots = memory.get_rune_slots()
 
     if memory.get_hotbar() != 8:
@@ -377,50 +366,107 @@ def use_none_magical_weapon(bot) -> None:
         time.sleep(0.250)
 
 
-def select_spell(spell_id: int, hotbar_key: str) -> None:
-    while memory.get_spell() != spell_id:
-        pyautogui.press(hotbar_key)
+def select_spell(spell: int, shift: bool = False) -> None:
+    if memory.get_spell() == spell:
+        return
+
+    if shift:
+        pyautogui.keyDown('shift')
+        time.sleep(0.250)
+
+    if spell == consts.Spell.NONE:
+        return
+    elif spell == consts.Spell.CALL_OF_THE_GODS:
+        pyautogui.press(consts.Spell_Bar.CALL_OF_THE_GODS)
+    elif spell == consts.Spell.SUPERIOR_HEAL:
+        pyautogui.press(consts.Spell_Bar.SUPERIOR_HEAL)
+    elif spell == consts.Spell.SUSTAINING_HEAL:
+        pyautogui.press(consts.Spell_Bar.SUSTAINING_HEAL)
+    elif spell == consts.Spell.BLESSING_OF_ARNA:
+        pyautogui.press(consts.Spell_Bar.BLESSING_OF_ARNA)
+    elif spell == consts.Spell.ANARCHY:
+        pyautogui.press(consts.Spell_Bar.ANARCHY)
+    elif spell == consts.Spell.CEREBRAL_THOUGHT:
+        pyautogui.press(consts.Spell_Bar.CEREBRAL_THOUGHT)
+    elif spell == consts.Spell.RESPLENDENCE:
+        pyautogui.press(consts.Spell_Bar.RESPLENDENCE)
+    elif spell == consts.Spell.BULWARK_MIGHT:
+        pyautogui.press(consts.Spell_Bar.BULWARK_MIGHT)
+    elif spell == consts.Spell.HOLY_AURA:
+        pyautogui.press(consts.Spell_Bar.HOLY_AURA)
+    elif spell == consts.Spell.FORTIFY:
+        pyautogui.press(consts.Spell_Bar.FORTIFY)
+    elif spell == consts.Spell.ALACRITY:
+        pyautogui.press(consts.Spell_Bar.ALACRITY)
+    elif spell == consts.Spell.GRANDEUR:
+        pyautogui.press(consts.Spell_Bar.GRANDEUR)
+    elif spell == consts.Spell.GAZELLE:
+        pyautogui.press(consts.Spell_Bar.GAZELLE)
+    elif spell == consts.Spell.AEGIS_OF_ARNA:
+        pyautogui.press(consts.Spell_Bar.AEGIS_OF_ARNA)
+    elif spell == consts.Spell.FAITH:
+        pyautogui.press(consts.Spell_Bar.FAITH)
+    elif spell == consts.Spell.DARK_PRAYER:
+        pyautogui.press(consts.Spell_Bar.DARK_PRAYER)
+    elif spell == consts.Spell.BLESSING_OF_MALAX:
+        pyautogui.press(consts.Spell_Bar.BLESSING_OF_MALAX)
+    time.sleep(0.250)
+
+    if shift:
+        pyautogui.keyUp('shift')
         time.sleep(0.250)
 
 
-def prepare_to_heal(bot) -> None:
+def prepare_to_heal(bot: Bot) -> None:
     use_magical_weapon(bot)
-    use_body_rune(bot)
+    use_rune(bot, consts.Rune.BODY)
+
+    if memory.get_hotbar() != 8:
+        bot.log('[Logic] Switching to hotbar #8')
+        memory.set_hotbar(8)
 
 
-def prepare_to_buff(bot) -> None:
+def prepare_to_buff(bot: Bot) -> None:
+    use_magical_weapon(bot)
+
     if memory.get_hotbar() != 2:
         bot.log('[Logic] Switching to hotbar #2')
         memory.set_hotbar(2)
 
 
-def prepare_to_attack() -> None:
+def prepare_to_attack(bot: Bot) -> None:
+    if memory.get_hotbar() != 8:
+        bot.log('[Logic] Switching to hotbar #8')
+        memory.set_hotbar(8)
+
     if memory.get_spell() != 0:
         pyautogui.press('f2')
     # use_none_magical_weapon(bot)
 
 
-def use_spell(bot, spell: int, spellType: int, coords: List[int], offsets: List[int]) -> Union[Any, None]:
-    if not memory.get_spell() == spell:
-        memory.set_spell(spell)
-    if not memory.get_spell_state() == 1:
-        memory.set_spell_state(1)
-    if not memory.get_spell_type() == spellType:
-        memory.set_spell_type(spellType)
+def use_spell(bot: Bot, spell_data: Tuple[int, int, bool] = (-1, 0, False), coords: List[int] = (0, 0), offsets: List[int] = (0, 0)) -> int:
+    if memory.get_hotbar() != spell_data[1]:
+        bot.log(f'[Logic] Switching to hotbar #{spell_data[1]}')
+        memory.set_hotbar(spell_data[1])
+    if memory.get_spell() != spell_data[0]:
+        select_spell(spell_data[0], spell_data[2])
 
-    controller.move_mouse(coords[0] + offsets[0], coords[1] + [1], False)
+    if coords[0] != 0 or coords[1] != 0:
+        controller.move_mouse(coords[0] + offsets[0], coords[1] + [1], False)
     controller.left_mouse_click()
     spellResult = get_spell_result()
     if spellResult == 3:  # fizzled
-        return use_spell(bot, spell, spellType, coords, offsets)
+        return use_spell(bot, spell_data, coords, offsets)
     elif spellResult != 2:
         time.sleep(3.0)
         check_runes(bot)
+        return spellResult
+    return spellResult
 
 
-def use_healing_spell(bot) -> bool:
+def use_healing_spell(bot: Bot) -> int:
     prepare_to_heal(bot)
-    select_spell(consts.Spell.SUPERIOR_HEAL, 'f2')
+    select_spell(consts.Spell.SUPERIOR_HEAL)
 
     bot.log('[Logic] Casting heal on self')
     click_self()
@@ -431,14 +477,14 @@ def use_healing_spell(bot) -> bool:
     elif spellResult != 2:
         time.sleep(consts.SpellTimer.SUPERIOR_HEAL)
         check_runes(bot)
-        return True
+        return spellResult
     else:
-        return False
+        return spellResult
 
 
-def use_call_of_the_gods_spell(bot) -> bool:
+def use_call_of_the_gods_spell(bot: Bot) -> int:
     prepare_to_heal(bot)
-    select_spell(consts.Spell.CALL_OF_THE_GODS, 'f6')
+    select_spell(consts.Spell.CALL_OF_THE_GODS)
 
     bot.log('[Logic] Casting Call of the Gods on bot')
     click_self()
@@ -453,9 +499,9 @@ def use_call_of_the_gods_spell(bot) -> bool:
     elif spellResult != 2:
         time.sleep(consts.SpellTimer.CALL_OF_THE_GODS)
         check_runes(bot)
-        return True
+        return spellResult
     else:
-        return False
+        return spellResult
 
 
 def use_stamina_potion() -> None:
@@ -465,10 +511,10 @@ def use_stamina_potion() -> None:
 
 
 def get_game_window_center() -> List[int]:
-    screen = memory.get_screen()
+    #screen = memory.get_screen()
     game_window = memory.get_game_window()
-    game_width = screen[0] + game_window[0] + game_window[2]
-    game_height = screen[1] + game_window[1] + game_window[3]
+    game_width = game_window[0] + game_window[2]
+    game_height = game_window[1] + game_window[3]
     return [int(game_width/2), int(game_height/2)]
 
 
@@ -478,7 +524,7 @@ def get_own_screen_coords() -> List[int]:
     return [int(middleOfWindow[0] + (tileWidth / 2)), int(middleOfWindow[1] - (tileHeight / 2))]
 
 
-def get_entity_screen_location(bot, entity: Dict[str, Any]) -> Dict[str, Any]:
+def get_entity_screen_location(bot: Bot, entity: Dict[str, Union[int, str, Tuple]]) -> Dict[List[int], List[int]]:
     selfCoords = get_own_screen_coords()
     tileWidth, tileHeight = consts.TILE_SIZE
     xDif, yDif = entity['distance']
@@ -487,14 +533,14 @@ def get_entity_screen_location(bot, entity: Dict[str, Any]) -> Dict[str, Any]:
     yOffset = 0
 
     if yDif < 0:
-        yOffset = int(-abs(yDif * tileHeight) + (tileHeight / 1.5))
+        yOffset = int(-abs(yDif * tileHeight) + (tileHeight / 1.65))
     else:
-        yOffset = int(abs(yDif * tileHeight) - (tileHeight / 1.5))
+        yOffset = int(abs(yDif * tileHeight) - (tileHeight / 1.75))
 
     if yDif < 0:
-        tileOffset = int(abs(yDif) * (tileWidth / 1.4) / 2)
-    elif yDif >= 3:
-        tileOffset = int(-abs(abs(yDif / 2) * (tileWidth / 1.55)))
+        tileOffset = int(abs(yDif) * (tileWidth / 1.6) / 2)
+    elif yDif >= 2:
+        tileOffset = int(-abs(abs(yDif / 2) * (tileWidth / 1.6)))
     else:
         tileOffset = 0
 
@@ -503,7 +549,7 @@ def get_entity_screen_location(bot, entity: Dict[str, Any]) -> Dict[str, Any]:
             xOffset = int(-abs((xDif * tileWidth) + tileOffset))
         else:
             xOffset = int(abs((xDif * tileWidth) + tileOffset))
-    elif xOffset < 0:
+    elif xDif < 0:
         xOffset = int(-abs((xDif * tileWidth) + tileOffset))
     else:
         xOffset = int(abs((xDif * tileWidth) + tileOffset))
@@ -515,67 +561,160 @@ def get_entity_screen_location(bot, entity: Dict[str, Any]) -> Dict[str, Any]:
     return {'coords': selfCoords, 'offsets': [xOffset, yOffset]}
 
 
-def un_ignore_entity(bot, entity: Dict[str, Any]) -> None:
+def un_ignore_entity(bot: Bot, entity: Dict[str, Union[int, str, Tuple]]) -> None:
     if bot != None:
         bot.log(
             f'[Logic] Removed {entity["name"]} from temporary ignore list')
         bot.ignored_ids = remove_from_array(bot.ignored_ids, entity['id'])
 
 
-def ignore_entity(bot, entity: Dict[str, Any]) -> None:
+def ignore_entity(bot: Bot, entity: Dict[str, Union[int, str, Tuple]]) -> None:
     def removeIgnored():
         un_ignore_entity(bot, entity)
 
     bot.log(f'[Logic] Added {entity["name"]} to temporary ignore list')
     bot.ignored_ids.append(entity['id'])
-    bot.entities_on_screen = remove_from_array(bot.entities_on_screen, entity)
+    entities_on_screen = bot.entities_on_screen
+    bot.entities_on_screen = remove_from_array(entities_on_screen, entity)
     # Remove entity id from ignore list after 10 seconds
     threading.Timer(interval=10, function=removeIgnored).start()
 
 
-def buff_selected_entity(bot) -> None:
-    entity: Union[Dict[str, Any], None] = bot.selected_entity
-    if entity == None or bot.state != 1:
+def buff_mouse_entity(bot: Bot) -> None:
+    if memory.get_mouse_id() == 0:
+        bot.log(f'[Logic] No Entity found at mouse location to buff')
         return
 
-    use_magical_weapon(bot)
-
-    use_rune(bot, consts.Rune.MIND)
+    prepare_to_buff(bot)
     bot.log(f'[Logic] Casting debuffs')
-    prepare_to_buff(bot)
-    if memory.get_spell() == 0:
-        pyautogui.press('f2')
-    location = get_entity_screen_location(bot, entity)
+    use_rune(bot, consts.Rune.MIND)
+
     for _ in range(3):
-        if bot.state == 1:
-            use_spell(bot, consts.Spell.ANARCHY, 5,
-                      location['coords'], offsets=location['offsets'])
+        use_spell(bot, spell_data=[consts.Spell.ANARCHY, 2, True])
 
-    if bot.state != 1:
-        return
+    bot.log(f'[Logic] Casting mind buffs')
+    buffs = [consts.Spell.CEREBRAL_THOUGHT, consts.Spell.RESPLENDENCE]
 
-    buffs = [consts.Spell.RESPLENDENCE, consts.Spell.ALACRITY, consts.Spell.GRANDEUR, consts.Spell.GAZELLE, consts.Spell.AEGIS, consts.Spell.FAITH,
-             consts.Spell.DARK_PRAYER, consts.Spell.BLESSING_OF_ARNA, consts.Spell.BULWARK_MIGHT, consts.Spell.HOLY_AURA, consts.Spell.FORTIFY]
-
-    bot.log(f'[Logic] Casting buffs')
-    prepare_to_buff(bot)
-
-    if bot.state != 1:
-        return
-
-    location = get_entity_screen_location(bot, entity)
     for spell in range(len(buffs)-1):
-        if bot.state == 1:
-            use_spell(bot, spell, 5,
-                      location['coords'], offsets=location['offsets'])
+        use_spell(bot, spell_data=[spell, 2, False])
+
+    bot.log(f'[Logic] Casting nature buffs')
+    use_rune(bot, consts.Rune.NATURE)
+    buffs = [consts.Spell.ALACRITY,
+             consts.Spell.GRANDEUR]
+
+    for spell in range(len(buffs)-1):
+        use_spell(bot, spell_data=[spell, 2, False])
+        return
+    use_spell(bot, spell_data=[consts.Spell.GAZELLE, 2, True])
+
+    bot.log(f'[Logic] Casting soul buffs')
+    use_rune(bot, consts.Rune.SOUL)
+    buffs = [consts.Spell.DARK_PRAYER, consts.Spell.FAITH,
+             consts.Spell.AEGIS_OF_ARNA, consts.Spell.BLESSING_OF_MALAX]
+
+    for spell in range(len(buffs)-1):
+        use_spell(bot, spell_data=[spell, 2, False])
+
+    bot.log(f'[Logic] Casting body buffs')
+    use_rune(bot, consts.Rune.BODY)
+    buffs = [consts.Spell.BULWARK_MIGHT,
+             consts.Spell.HOLY_AURA, consts.Spell.FORTIFY]
+
+    for spell in range(len(buffs)-1):
+        use_spell(bot, spell_data=[spell, 2, False])
 
     bot.selected_entity = None
 
 
-def heal_selected_entity(bot) -> None:
+def buff_selected_entity(bot: Bot) -> None:
+    entity: Union[Dict[str, Union[int, str, Tuple]],
+                  None] = bot.selected_entity
+    if entity == None or bot.state != 1:
+        return
+
+    prepare_to_buff(bot)
+
+    bot.log(f'[Logic] Casting debuffs')
+    use_rune(bot, consts.Rune.MIND)
+    location = get_entity_screen_location(bot, entity)
+
+    for _ in range(3):
+        if bot.state != 1:
+            break
+        use_spell(bot, spell_data=[consts.Spell.ANARCHY, 2, True],
+                  coords=location['coords'], offsets=location['offsets'])
+
+    if bot.state != 1:
+        return
+
+    bot.log(f'[Logic] Casting mind buffs')
+    buffs = [consts.Spell.CEREBRAL_THOUGHT, consts.Spell.RESPLENDENCE]
+    location = get_entity_screen_location(bot, entity)
+
+    for spell in range(len(buffs)-1):
+        if bot.state != 1:
+            break
+        use_spell(bot, spell_data=[spell, 2, False],
+                  coords=location['coords'], offsets=location['offsets'])
+
+    if bot.state != 1:
+        return
+
+    bot.log(f'[Logic] Casting nature buffs')
+    use_rune(bot, consts.Rune.NATURE)
+    buffs = [consts.Spell.ALACRITY,
+             consts.Spell.GRANDEUR]
+    location = get_entity_screen_location(bot, entity)
+
+    for spell in range(len(buffs)-1):
+        if bot.state != 1:
+            break
+        use_spell(bot, spell_data=[spell, 2, False],
+                  coords=location['coords'], offsets=location['offsets'])
+        return
+    if bot.state == 1:
+        use_spell(bot, spell_data=[consts.Spell.GAZELLE, 2, True],
+                  coords=location['coords'], offsets=location['offsets'])
+
+    if bot.state != 1:
+        return
+
+    bot.log(f'[Logic] Casting soul buffs')
+    use_rune(bot, consts.Rune.SOUL)
+    buffs = [consts.Spell.DARK_PRAYER, consts.Spell.FAITH,
+             consts.Spell.AEGIS_OF_ARNA, consts.Spell.BLESSING_OF_MALAX]
+    location = get_entity_screen_location(bot, entity)
+
+    for spell in range(len(buffs)-1):
+        if bot.state != 1:
+            break
+        use_spell(bot, spell_data=[spell, 2, False],
+                  coords=location['coords'], offsets=location['offsets'])
+
+    if bot.state != 1:
+        return
+
+    bot.log(f'[Logic] Casting body buffs')
+    use_rune(bot, consts.Rune.BODY)
+    buffs = [consts.Spell.BULWARK_MIGHT,
+             consts.Spell.HOLY_AURA, consts.Spell.FORTIFY]
+    location = get_entity_screen_location(bot, entity)
+
+    for spell in range(len(buffs)-1):
+        if bot.state != 1:
+            break
+        use_spell(bot, spell_data=[spell, 2, False],
+                  coords=location['coords'], offsets=location['offsets'])
+
+    bot.selected_entity = None
+
+
+def heal_selected_entity(bot: Bot) -> None:
     bot.log(
         f'[Logic] heal_selected_entity: {bot.selected_entity}')
-    entity: Union[Dict[str, Any], None] = bot.selected_entity
+    entity: Union[Dict[str, Union[int, str, Tuple]],
+                  None] = bot.selected_entity
     if entity == None or bot.state != 1:
         return
 
@@ -648,13 +787,13 @@ def use_werewolf_totem() -> None:
     pyautogui.press('f12')
 
 
-def target_new_enemy(bot) -> None:
+def target_new_enemy(bot: Bot) -> None:
     target = 0
     if memory.get_target_id() > 0 and get_attack_result() != 2:
         return
 
     bot.looking_for_target = True
-    prepare_to_attack()
+    prepare_to_attack(bot)
 
     bot.log('[Attacker] Looking for a new target...')
     tick = 0
@@ -684,15 +823,15 @@ def target_new_enemy(bot) -> None:
     bot.looking_for_target = False
 
 
-def get_entity_to_heal(bot) -> None:
+def get_entity_to_heal(bot: Bot) -> None:
     entities_on_screen = bot.entities_on_screen
-    if len(entities_on_screen) == 0 or bot.state != 1:
+    if entities_on_screen == None or len(entities_on_screen) == 0 or bot.state != 1:
         return
 
     bot.log(
         '[Logic] Checking for the entity on-screen in need of healing...')
 
-    entity: Dict[str, Any] = entities_on_screen[0]
+    entity: Dict[str, Union[int, str, Tuple]] = entities_on_screen[0]
     partyAssistId = memory.get_party_assist_id()
     if partyAssistId > 0:
         for e in entities_on_screen:
@@ -711,7 +850,7 @@ def get_entity_to_heal(bot) -> None:
             f'[Logic] Failed to find any entities in need of healing on the screen')
 
 
-def get_entities_on_screen(bot) -> None:
+def get_entities_on_screen(bot: Bot) -> None:
     non_player_ids = bot.non_player_ids
     ignored_ids = bot.ignored_ids
     if bot.state != 1:
@@ -722,25 +861,31 @@ def get_entities_on_screen(bot) -> None:
     followerId = memory.get_follower_id()
     entities = []
     for offset in sorted(consts.SCREEN_ENTITY_OFFSETS):
-        if bot.state != 1:
-            break
-        for i in range(1):
+        try:
             if bot.state != 1:
                 break
+            for i in range(1):
+                if bot.state != 1:
+                    break
 
-            hexCode = hex(offset + (i * 4))
-            entity = memory.get_entity_data(hexCode)
-            _id = entity['id']
-            if _id == 0 or entity['name'] == '' or (entity['tag'] == '' and _id != followerId) or is_known_pet(entity['name']) or _id in non_player_ids or _id in ignored_ids:
-                break
+                hexCode = hex(offset + (i * 4))
+                entity = memory.get_entity_data(hexCode)
+                if entity == None:
+                    break
+                _id = entity['id']
+                if _id == 0 or entity['name'] == '' or (entity['tag'] == '' and _id != followerId) or is_known_pet(entity['name']) or _id in non_player_ids or _id in ignored_ids:
+                    break
 
-            distance = get_distance_apart(
-                selfLoc, entity['coords'])
-            if distance[0] <= 14 and distance[0] >= -13 and distance[1] <= 12 and distance[1] >= -12:
-                entity['distance'] = distance
-                entity['percentage'] = get_missing_health_percentage(
-                    entity['hp'][0], entity['hp'][1])
-                entities.append(entity)
+                distance = get_distance_apart(
+                    selfLoc, entity['coords'])
+                if distance[0] <= 14 and distance[0] >= -13 and distance[1] <= 12 and distance[1] >= -12:
+                    entity['distance'] = distance
+                    entity['percentage'] = get_missing_health_percentage(
+                        entity['hp'][0], entity['hp'][1])
+                    entities.append(entity)
+        except Exception as err:
+            bot.log(f'[Logic] {traceback.format_exc()}')
+            continue
 
     bot.entities_on_screen = sort_by(filter(entities, 'id'), 'percentage')
     if len(bot.entities_on_screen) > 0:
