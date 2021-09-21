@@ -39,10 +39,20 @@ class HealerThread(BotThread):
         keyboard.add_hotkey('ctrl+end', self.buff_selected_entity)
         keyboard.add_hotkey('ctrl+alt', self.get_selected_entity)
 
+        keyboard.add_hotkey('ctrl+-', self.toggle_none)
+        keyboard.add_hotkey('ctrl+/', self.toggle_auto)
+        keyboard.add_hotkey('ctrl+*', self.toggle_buff)
+
     def check_entities_on_screen(self) -> None:
+        if self.state < 2:
+            return
+
         self.background_queue.add('get_entities_on_screen')
 
     def check_entity_to_heal(self) -> None:
+        if self.state != 2:
+            return
+
         if self.selected_entity == None:
             self.worker_queue.add('get_entity_to_heal')
 
@@ -52,24 +62,33 @@ class HealerThread(BotThread):
         _tick = 0
 
         while True:
-            if self.state == 1:
+            if self.state == 2 or self.state == 3:
                 self.check_game()
                 if self.process_found:
-                    _tick += 1
-                    # threading.Thread(target=self.check_system_message).start()
-                    # threading.Thread(target=self.check_guild_message).start()
-                    threading.Thread(target=self.check_totems_and_food).start()
-
-                    if (_tick % 2) == 0:
+                    if self.state == 2:
+                        _tick += 1
+                        # threading.Thread(target=self.check_system_message).start()
+                        # threading.Thread(target=self.check_guild_message).start()
                         threading.Thread(
-                            target=self.check_entities_on_screen).start()
-                    else:
-                        threading.Thread(
-                            target=self.check_entity_to_heal).start()
+                            target=self.check_totems_and_food).start()
 
-                    if (_tick % 10) == 0:
-                        threading.Thread(target=self.check_own_health).start()
-                        threading.Thread(target=self.check_own_stamina).start()
+                        if (_tick % 2) == 0:
+                            threading.Thread(
+                                target=self.check_entities_on_screen).start()
+                        else:
+                            threading.Thread(
+                                target=self.check_entity_to_heal).start()
+
+                        if (_tick % 10) == 0:
+                            threading.Thread(
+                                target=self.check_own_health).start()
+                            threading.Thread(
+                                target=self.check_own_stamina).start()
+                    elif self.state == 3:
+                        _tick += 1
+                        if (_tick % 2) == 0:
+                            threading.Thread(
+                                target=self.check_entities_on_screen).start()
                 else:
                     self.log(f'[{self.name}] Game Process not found!')
                     self.log(f'[{self.name}] Waiting...')

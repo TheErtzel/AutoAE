@@ -99,7 +99,7 @@ class ConsumerThread(threading.Thread):
         self.processing = False
 
     def add(self, name: str = '', addToStart: bool = False):
-        if self.bot.state == 0 or self.bot.state == 'shutdown' or name == '':
+        if self.bot.state < 2 or name == '':
             return
 
         if not name in self._q:
@@ -111,9 +111,9 @@ class ConsumerThread(threading.Thread):
                 self._q.append(name)
 
     def run(self):
-        while not self.bot.state == 'shutdown':
+        while not self.bot.state == -1:
             try:
-                if len(self._q) > 0 and not self.bot.state == 0 and not self.processing:
+                if len(self._q) > 0 and not self.bot.state < 2 and not self.processing:
                     item = self._q.popleft()
                     self._process(item)
                 else:

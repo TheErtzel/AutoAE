@@ -36,7 +36,14 @@ class AttackerThread(BotThread):
         keyboard.add_hotkey('ctrl+end', self.set_protect)
         keyboard.add_hotkey('ctrl+alt', self.get_selected_entity)
 
+        keyboard.add_hotkey('ctrl+-', self.toggle_none)
+        keyboard.add_hotkey('ctrl+/', self.toggle_auto)
+        keyboard.add_hotkey('ctrl+*', self.toggle_buff)
+
     def check_target(self) -> None:
+        if self.state != 2:
+            return
+
         if not self.looking_for_target:
             self.worker_queue.add('target_new_enemy')
 
@@ -46,20 +53,22 @@ class AttackerThread(BotThread):
         _tick = 0
 
         while True:
-            # threading.Thread(target=self.check_system_message).start()
-            if self.state == 1:
+            if self.state == 2 or self.state == 3:
                 self.check_game()
                 if self.process_found:
-                    _tick += 1
-                    # threading.Thread(target=self.check_system_message).start()
-                    # threading.Thread(target=self.check_guild_message).start()
-                    threading.Thread(
-                        target=self.check_totems_and_food).start()
-                    threading.Thread(target=self.check_target).start()
+                    if self.state == 2:
+                        _tick += 1
+                        # threading.Thread(target=self.check_system_message).start()
+                        # threading.Thread(target=self.check_guild_message).start()
+                        threading.Thread(
+                            target=self.check_totems_and_food).start()
+                        threading.Thread(target=self.check_target).start()
 
-                    if (_tick % 10) == 0:
-                        threading.Thread(target=self.check_own_health).start()
-                        threading.Thread(target=self.check_own_stamina).start()
+                        if (_tick % 10) == 0:
+                            threading.Thread(
+                                target=self.check_own_health).start()
+                            threading.Thread(
+                                target=self.check_own_stamina).start()
                 else:
                     self.log(f'[{self.name}] Game Process not found!')
                     self.log(f'[{self.name}] Waiting...')

@@ -274,6 +274,9 @@ def replace_runes(bot: Bot, ids: List[int]) -> None:
 
 
 def check_runes(bot: Bot) -> None:
+    if bot.state < 2:
+        return
+
     rune_slots = memory.get_rune_slots()
     indexes = []
 
@@ -581,6 +584,9 @@ def ignore_entity(bot: Bot, entity: Dict[str, Union[int, str, Tuple]]) -> None:
 
 
 def buff_mouse_entity(bot: Bot) -> None:
+    if bot.state != 3:
+        return
+
     if memory.get_mouse_id() == 0:
         bot.log(f'[Logic] No Entity found at mouse location to buff')
         return
@@ -590,13 +596,23 @@ def buff_mouse_entity(bot: Bot) -> None:
     use_rune(bot, consts.Rune.MIND)
 
     for _ in range(3):
+        if bot.state != 3:
+            break
         use_spell(bot, spell_data=[consts.Spell.ANARCHY, 2, True])
+
+    if bot.state != 3:
+        return
 
     bot.log(f'[Logic] Casting mind buffs')
     buffs = [consts.Spell.CEREBRAL_THOUGHT, consts.Spell.RESPLENDENCE]
 
     for spell in range(len(buffs)-1):
+        if bot.state != 3:
+            break
         use_spell(bot, spell_data=[spell, 2, False])
+
+    if bot.state != 3:
+        return
 
     bot.log(f'[Logic] Casting nature buffs')
     use_rune(bot, consts.Rune.NATURE)
@@ -604,9 +620,11 @@ def buff_mouse_entity(bot: Bot) -> None:
              consts.Spell.GRANDEUR]
 
     for spell in range(len(buffs)-1):
+        if bot.state != 3:
+            break
         use_spell(bot, spell_data=[spell, 2, False])
-        return
-    use_spell(bot, spell_data=[consts.Spell.GAZELLE, 2, True])
+    if bot.state == 3:
+        use_spell(bot, spell_data=[consts.Spell.GAZELLE, 2, True])
 
     bot.log(f'[Logic] Casting soul buffs')
     use_rune(bot, consts.Rune.SOUL)
@@ -614,7 +632,12 @@ def buff_mouse_entity(bot: Bot) -> None:
              consts.Spell.AEGIS_OF_ARNA, consts.Spell.BLESSING_OF_MALAX]
 
     for spell in range(len(buffs)-1):
+        if bot.state != 3:
+            break
         use_spell(bot, spell_data=[spell, 2, False])
+
+    if bot.state != 3:
+        return
 
     bot.log(f'[Logic] Casting body buffs')
     use_rune(bot, consts.Rune.BODY)
@@ -622,6 +645,8 @@ def buff_mouse_entity(bot: Bot) -> None:
              consts.Spell.HOLY_AURA, consts.Spell.FORTIFY]
 
     for spell in range(len(buffs)-1):
+        if bot.state != 3:
+            break
         use_spell(bot, spell_data=[spell, 2, False])
 
     bot.selected_entity = None
@@ -630,7 +655,7 @@ def buff_mouse_entity(bot: Bot) -> None:
 def buff_selected_entity(bot: Bot) -> None:
     entity: Union[Dict[str, Union[int, str, Tuple]],
                   None] = bot.selected_entity
-    if entity == None or bot.state != 1:
+    if entity == None or bot.state != 2:
         return
 
     prepare_to_buff(bot)
@@ -640,12 +665,12 @@ def buff_selected_entity(bot: Bot) -> None:
     location = get_entity_screen_location(bot, entity)
 
     for _ in range(3):
-        if bot.state != 1:
+        if bot.state != 2:
             break
         use_spell(bot, spell_data=[consts.Spell.ANARCHY, 2, True],
                   coords=location['coords'], offsets=location['offsets'])
 
-    if bot.state != 1:
+    if bot.state != 2:
         return
 
     bot.log(f'[Logic] Casting mind buffs')
@@ -653,12 +678,12 @@ def buff_selected_entity(bot: Bot) -> None:
     location = get_entity_screen_location(bot, entity)
 
     for spell in range(len(buffs)-1):
-        if bot.state != 1:
+        if bot.state != 2:
             break
         use_spell(bot, spell_data=[spell, 2, False],
                   coords=location['coords'], offsets=location['offsets'])
 
-    if bot.state != 1:
+    if bot.state != 2:
         return
 
     bot.log(f'[Logic] Casting nature buffs')
@@ -668,16 +693,15 @@ def buff_selected_entity(bot: Bot) -> None:
     location = get_entity_screen_location(bot, entity)
 
     for spell in range(len(buffs)-1):
-        if bot.state != 1:
+        if bot.state != 2:
             break
         use_spell(bot, spell_data=[spell, 2, False],
                   coords=location['coords'], offsets=location['offsets'])
-        return
-    if bot.state == 1:
+    if bot.state == 2:
         use_spell(bot, spell_data=[consts.Spell.GAZELLE, 2, True],
                   coords=location['coords'], offsets=location['offsets'])
 
-    if bot.state != 1:
+    if bot.state != 2:
         return
 
     bot.log(f'[Logic] Casting soul buffs')
@@ -687,12 +711,12 @@ def buff_selected_entity(bot: Bot) -> None:
     location = get_entity_screen_location(bot, entity)
 
     for spell in range(len(buffs)-1):
-        if bot.state != 1:
+        if bot.state != 2:
             break
         use_spell(bot, spell_data=[spell, 2, False],
                   coords=location['coords'], offsets=location['offsets'])
 
-    if bot.state != 1:
+    if bot.state != 2:
         return
 
     bot.log(f'[Logic] Casting body buffs')
@@ -702,7 +726,7 @@ def buff_selected_entity(bot: Bot) -> None:
     location = get_entity_screen_location(bot, entity)
 
     for spell in range(len(buffs)-1):
-        if bot.state != 1:
+        if bot.state != 2:
             break
         use_spell(bot, spell_data=[spell, 2, False],
                   coords=location['coords'], offsets=location['offsets'])
@@ -715,7 +739,7 @@ def heal_selected_entity(bot: Bot) -> None:
         f'[Logic] heal_selected_entity: {bot.selected_entity}')
     entity: Union[Dict[str, Union[int, str, Tuple]],
                   None] = bot.selected_entity
-    if entity == None or bot.state != 1:
+    if entity == None or bot.state != 2:
         return
 
     bot.log(
@@ -725,11 +749,11 @@ def heal_selected_entity(bot: Bot) -> None:
     bot.log(
         f'[Logic] heal_selected_entity selecting spell')
 
-    while memory.get_spell() != consts.Spell.SUPERIOR_HEAL and bot.state == 1:
+    while memory.get_spell() != consts.Spell.SUPERIOR_HEAL and bot.state == 2:
         pyautogui.press('f2')
         time.sleep(0.250)
 
-    if bot.state != 1:
+    if bot.state != 2:
         return
 
     bot.log(
@@ -739,7 +763,7 @@ def heal_selected_entity(bot: Bot) -> None:
     entityFound = click_entity(entity['id'], location['coords'][0],
                                location['coords'][1], offset=location['offsets'])
 
-    if not entityFound or bot.state != 1:
+    if not entityFound or bot.state != 2:
         bot.selected_entity = None
         return
 
@@ -798,7 +822,7 @@ def target_new_enemy(bot: Bot) -> None:
     bot.log('[Attacker] Looking for a new target...')
     tick = 0
     while tick < 30:
-        if bot.state != 1:
+        if bot.state != 2:
             bot.looking_for_target = False
             break
         pyautogui.press('`')
@@ -825,7 +849,7 @@ def target_new_enemy(bot: Bot) -> None:
 
 def get_entity_to_heal(bot: Bot) -> None:
     entities_on_screen = bot.entities_on_screen
-    if entities_on_screen == None or len(entities_on_screen) == 0 or bot.state != 1:
+    if entities_on_screen == None or len(entities_on_screen) == 0 or bot.state != 2:
         return
 
     bot.log(
@@ -853,7 +877,7 @@ def get_entity_to_heal(bot: Bot) -> None:
 def get_entities_on_screen(bot: Bot) -> None:
     non_player_ids = bot.non_player_ids
     ignored_ids = bot.ignored_ids
-    if bot.state != 1:
+    if bot.state < 2:
         return
 
     bot.log(f'[Logic] Updating entities on the screen...')
@@ -862,10 +886,10 @@ def get_entities_on_screen(bot: Bot) -> None:
     entities = []
     for offset in sorted(consts.SCREEN_ENTITY_OFFSETS):
         try:
-            if bot.state != 1:
+            if bot.state < 2:
                 break
             for i in range(1):
-                if bot.state != 1:
+                if bot.state < 2:
                     break
 
                 hexCode = hex(offset + (i * 4))

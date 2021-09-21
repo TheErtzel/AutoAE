@@ -13,18 +13,53 @@ class BotThread(Bot):
         if name != None:
             self.name = name
 
-    def setState(self, state: int) -> None:
-        if not self.state == 0:
+    def set_state(self, state: int) -> None:
+        if not state < 0:
             self.state = state
+            if state == 0:
+                self.log(f'[{self.name}] Paused')
+            elif state == 1:
+                self.log(
+                    f'[{self.name}] Un-paused. Press ctrl+/ for Auto Mode or ctrl+* for Buff Mode')
+            if state == 2:
+                self.log(f'[{self.name}] Auto Mode Enabled')
+            elif state == 3:
+                self.log(f'[{self.name}] Buff Mode Enabled')
 
     def toggle_pause(self) -> None:
         if self.state == 0:
-            self.state = 1
-            self.log(f'[{self.name}] Un-paused')
+            self.set_state(1)
         else:
-            self.state = 0
-            self.log(f'[{self.name}] Paused')
+            self.set_state(0)
+
         time.sleep(0.500)
+
+    def toggle_none(self) -> None:
+        if self.state == 0:
+            self.log(f'[{self.name}] press [pause] to un-pause first!')
+            return
+
+        self.set_state(1)
+
+    def toggle_auto(self) -> None:
+        if self.state == 0:
+            self.log(f'[{self.name}] press [pause] to un-pause first!')
+            return
+
+        if self.state != 2:
+            self.set_state(2)
+        else:
+            self.set_state(1)
+
+    def toggle_buff(self) -> None:
+        if self.state == 0:
+            self.log(f'[{self.name}] press [pause] to un-pause first!')
+            return
+
+        if self.state != 3:
+            self.set_state(3)
+        else:
+            self.set_state(1)
 
     def check_game(self) -> None:
         with memory.GameProcess() as process:
@@ -42,6 +77,9 @@ class BotThread(Bot):
         self.cog_timeout = False
 
     def check_own_health(self) -> None:
+        if self.state != 2:
+            return
+
         healthPercentage = logic.get_missing_health_percentage(
             memory.get_health(), memory.get_health_max())
         if healthPercentage < 100:
@@ -63,6 +101,9 @@ class BotThread(Bot):
             self.worker_queue.add('use_healing_spell')
 
     def check_own_stamina(self) -> None:
+        if self.state != 2 or self.state != 2:
+            return
+
         ownStamina = memory.get_stamina()
 
         if ownStamina < 40:
@@ -101,12 +142,21 @@ class BotThread(Bot):
             f'[{self.name}] entity_data percentages: {logic.flatten(entities, "percentage")}')
 
     def buff_mouse_entity(self) -> None:
+        if self.state != 3:
+            return
+
         self.worker_queue.add('buff_mouse_entity')
 
     def buff_selected_entity(self) -> None:
+        if self.state != 2:
+            return
+
         self.worker_queue.add('buff_selected_entity')
 
     def set_protect(self) -> None:
+        if self.state != 2:
+            return
+
         if memory.get_follower_id() > 0:
             memory.set_follower_state(13)
 
@@ -114,16 +164,25 @@ class BotThread(Bot):
         self.log(f'[{self.name}] SelectedEntity: {self.selected_entity}')
 
     def check_system_message(self) -> None:
+        if self.state != 2:
+            return
+
         message = memory.get_system_message()
         if message != '' and message != 0:
             self.log(f'[{self.name}] get_system_message: {message}')
 
     def check_guild_message(self) -> None:
+        if self.state != 2:
+            return
+
         message = memory.get_guild_message()
         if message != '' and message != 0:
             self.log(f'[{self.name}] get_guild_message: {message}')
 
     def check_totems_and_food(self) -> None:
+        if self.state != 2:
+            return
+
         chatLogs = logic.get_last_channel_logs('Say', 2)
 
         if logic.logs_have_message(chatLogs, 'The effect from your food has faded', 'Eating the food'):
