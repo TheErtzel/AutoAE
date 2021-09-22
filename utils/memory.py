@@ -39,9 +39,9 @@ _poison_disease_offset = 0x580  # 8/13
 _spell_offset = 0x10808  # 8/13
 _spell_type_offset = 0x50  # 8/13
 _spell_state_offset = 0x5F0  # 8/11
-_Rune_type_offset = 0x10818  # 8/15
-_Rune_charge_offset = 0x10840  # 8/13
-_Rune_slots_offset = 0x10810  # 8/13
+_rune_type_offset = 0x10818  # 8/15
+_rune_charge_offset = 0x10840  # 8/13
+_rune_slots_offset = 0x10810  # 8/13
 
 
 class GameProcess():
@@ -363,10 +363,10 @@ def get_spell_type() -> int:
 
 def get_rune_types() -> List[int]:
     Runelist: List[int] = []
-    typeOffset = _Rune_type_offset
+    typeOffset = _rune_type_offset
     with GameProcess() as process:
         if process != None:
-            for x in range(9):
+            for _ in range(9):
                 point = process.get_pointer(
                     _base + _base_spell, offsets=[typeOffset])
                 result = process.read(point)
@@ -377,10 +377,10 @@ def get_rune_types() -> List[int]:
 
 def get_rune_charges() -> List[int]:
     chargelist: List[int] = []
-    chargeOffset = _Rune_charge_offset
+    chargeOffset = _rune_charge_offset
     with GameProcess() as process:
         if process != None:
-            for x in range(9):
+            for _ in range(9):
                 point = process.get_pointer(
                     _base + _base_spell, offsets=[chargeOffset])
                 result = process.read(point)
@@ -394,7 +394,7 @@ def get_rune_slots() -> int:
     with GameProcess() as process:
         if process != None:
             point = process.get_pointer(
-                _base + _base_spell, offsets=[_Rune_slots_offset])
+                _base + _base_spell, offsets=[_rune_slots_offset])
             result = process.read(point)
     return result
 
@@ -521,9 +521,9 @@ def get_party_member_ids() -> List[int]:
     data: list[int] = []
     with GameProcess() as process:
         if process != None:
-            for x in range(partyCount):
+            for i in range(partyCount):
                 offsets = [0]
-                for i in range(x):
+                for __ in range(i):
                     offsets.append(0)
                 pointerId = process.get_pointer(
                     _base + _base_gui, offsets=[0x134] + offsets + [0x08])
@@ -537,9 +537,9 @@ def get_party_member_locations() -> List[tuple]:
     locations: list[tuple] = []
     with GameProcess() as process:
         if process != None:
-            for x in range(partyCount):
+            for i in range(partyCount):
                 offsets = [0]
-                for i in range(x):
+                for _ in range(i):
                     offsets.append(0)
                 pointX = process.get_pointer(
                     _base + _base_gui, offsets=[0x134] + offsets + [0x44])
@@ -559,9 +559,9 @@ def get_party_member_names() -> List[str]:
     names: list[str] = []
     with GameProcess() as process:
         if process != None:
-            for x in range(partyCount):
+            for i in range(partyCount):
                 offsets = [0]
-                for i in range(x):
+                for _ in range(i):
                     offsets.append(0)
                 pointer = process.get_pointer(
                     _base + _base_gui, offsets=[0x134] + offsets + [0x000C])
@@ -575,9 +575,9 @@ def get_party_member_data() -> List:
     data: list = []
     with GameProcess() as process:
         if process != None:
-            for x in range(partyCount):
+            for i in range(partyCount):
                 offsets = [0]
-                for i in range(x):
+                for _ in range(i):
                     offsets.append(0)
                 pointerId = process.get_pointer(
                     _base + _base_gui, offsets=[0x134] + offsets + [0x08])
@@ -705,57 +705,85 @@ def get_target_id() -> int:
     return result
 
 
-def get_follower_id() -> int:
-    result: int = 0
+def get_followers_id() -> List[int]:
+    result: List[int] = [0, 0, 0]
     with GameProcess() as process:
         if process != None:
-            point = process.get_pointer(
-                _base + _base_follower, offsets=[_follower_id_offset])
-            result = process.read(point)
-            if result == 4294967295:
-                result = 0
+            offset = _follower_id_offset
+            for i in range(2):
+                offset = offset + (i * 0x58)
+                point = process.get_pointer(
+                    _base + _base_follower, offsets=[offset])
+                result_id = process.read(point)
+                if result_id == 4294967295:
+                    result_id = 0
+                result[i] = result_id
     return result
 
 
-def get_follower_state() -> int:
+def get_followers_state() -> List[int]:
     # 0 = None, 11 = Follow, 12 = Stay, 13 = Protect, 15 = Guard, 16 = Attack, 17 = Inv, 18 = Flee, 19 = Assist
-    result: int = 0
+    result: List[int] = [0, 0, 0]
     with GameProcess() as process:
         if process != None:
-            point = process.get_pointer(
-                _base + _base_follower, offsets=[_follower_mode_offset])
-            result = process.read(point)
+            offset = _follower_mode_offset
+            for i in range(2):
+                offset = offset + (i * 0x58)
+                point = process.get_pointer(
+                    _base + _base_follower, offsets=[offset])
+                result[i] = process.read(point)
     return result
 
 
-def set_follower_state(state: int = 0) -> bool:
+def set_followers_state(state: int = 0) -> List[bool]:
+    # [state] 0 = None, 11 = Follow, 12 = Stay, 13 = Protect, 15 = Guard, 16 = Attack, 17 = Inv, 18 = Flee, 19 = Assist
+    result: List[bool] = [False, False, False]
+    with GameProcess() as process:
+        if process != None:
+            offset = _follower_mode_offset
+            for i in range(2):
+                offset = offset + (i * 0x58)
+                point = process.get_pointer(
+                    _base + _base_follower, offsets=[offset])
+                result[i] = process.write(point, state)
+    return result
+
+
+def set_follower_state(index: int = 0, state: int = 0) -> bool:
     # [state] 0 = None, 11 = Follow, 12 = Stay, 13 = Protect, 15 = Guard, 16 = Attack, 17 = Inv, 18 = Flee, 19 = Assist
     result: bool = False
     with GameProcess() as process:
         if process != None:
+            offset = _follower_mode_offset + (index * 0x58)
             point = process.get_pointer(
-                _base + _base_follower, offsets=[_follower_mode_offset])
+                _base + _base_follower, offsets=[offset])
             result = process.write(point, state)
     return result
 
 
-def get_follower_health() -> int:
-    result: int = 0
+def get_followers_health() -> List[int]:
+    result: List[int] = [0, 0, 0]
     with GameProcess() as process:
         if process != None:
-            point = process.get_pointer(
-                _base + _base_follower, offsets=[_follower_hp_offset])
-            result = process.read(point)
+            offset = _follower_hp_offset
+            for i in range(2):
+                offset = offset + (i * 0x58)
+                point = process.get_pointer(
+                    _base + _base_follower, offsets=[offset])
+                result[i] = process.read(point)
     return result
 
 
-def get_follower_health_max() -> int:
-    result: int = 0
+def get_followers_health_max() -> List[int]:
+    result: List[int] = [0, 0, 0]
     with GameProcess() as process:
         if process != None:
-            point = process.get_pointer(
-                _base + _base_follower, offsets=[_follower_hp_max_offset])
-            result = process.read(point)
+            offset = _follower_hp_max_offset
+            for i in range(2):
+                offset = offset + (i * 0x58)
+                point = process.get_pointer(
+                    _base + _base_follower, offsets=[offset])
+                result[i] = process.read(point)
     return result
 
 

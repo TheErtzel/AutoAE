@@ -29,6 +29,8 @@ class BotThread(Bot):
     def toggle_pause(self) -> None:
         if self.state == 0:
             self.set_state(1)
+            self.worker_queue.set_processing()
+            self.background_queue.set_processing()
         else:
             self.set_state(0)
 
@@ -113,10 +115,6 @@ class BotThread(Bot):
     def check_mouse_id(self) -> None:
         id = memory.get_mouse_id()
         self.log(f'[{self.name}] get_mouse_id: {id}')
-        gameWindow = logic.get_game_window_center()
-        self.log(f'[{self.name}] get_game_window_center: {gameWindow}')
-        selfCoords = logic.get_own_screen_coords()
-        self.log(f'[{self.name}] get_own_screen_coords: {selfCoords}')
 
     def entity_data(self) -> None:
         entities = []
@@ -157,8 +155,8 @@ class BotThread(Bot):
         if self.state != 2:
             return
 
-        if memory.get_follower_id() > 0:
-            memory.set_follower_state(13)
+        if memory.get_followers_id()[0] > 0:
+            memory.set_followers_state(13)
 
     def get_selected_entity(self) -> None:
         self.log(f'[{self.name}] SelectedEntity: {self.selected_entity}')

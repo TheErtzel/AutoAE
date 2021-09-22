@@ -23,11 +23,11 @@ class LoggerThread(threading.Thread):
 
         return
 
-    def add(self, text: str):
+    def add(self, text: str) -> None:
         if not text in self._q:
             self._q.append(text)
 
-    def run(self):
+    def run(self) -> None:
         while True:
             try:
                 if len(self._q) > 0:
@@ -61,7 +61,7 @@ class ConsumerThread(threading.Thread):
 
         return
 
-    def _process(self, name: str = ''):
+    def _process(self, name: str = '') -> None:
         self.processing = True
         self.bot.log(f'[{self.name}] processing: {name}')
         if name == 'use_healing_potion':
@@ -98,7 +98,10 @@ class ConsumerThread(threading.Thread):
             self.bot.log(f'[{self.name}] Unknown item: {name}')
         self.processing = False
 
-    def add(self, name: str = '', addToStart: bool = False):
+    def set_processing(self, status: bool = False) -> None:
+        self.processing = status
+
+    def add(self, name: str = '', addToStart: bool = False) -> None:
         if self.bot.state < 2 or name == '':
             return
 
@@ -110,7 +113,7 @@ class ConsumerThread(threading.Thread):
                 self.bot.log(f'[{self.name}] added: {name}')
                 self._q.append(name)
 
-    def run(self):
+    def run(self) -> None:
         while not self.bot.state == -1:
             try:
                 if len(self._q) > 0 and not self.bot.state < 2 and not self.processing:

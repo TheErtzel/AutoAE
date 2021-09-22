@@ -882,7 +882,7 @@ def get_entities_on_screen(bot: Bot) -> None:
 
     bot.log(f'[Logic] Updating entities on the screen...')
     selfLoc = memory.get_own_location()
-    followerId = memory.get_follower_id()
+    follower_ids = memory.get_followers_id()
     entities = []
     for offset in sorted(consts.SCREEN_ENTITY_OFFSETS):
         try:
@@ -897,7 +897,7 @@ def get_entities_on_screen(bot: Bot) -> None:
                 if entity == None:
                     break
                 _id = entity['id']
-                if _id == 0 or entity['name'] == '' or (entity['tag'] == '' and _id != followerId) or is_known_pet(entity['name']) or _id in non_player_ids or _id in ignored_ids:
+                if _id == 0 or entity['name'] == '' or (entity['tag'] == '' and not _id in follower_ids) or is_known_pet(entity['name']) or _id in non_player_ids or _id in ignored_ids:
                     break
 
                 distance = get_distance_apart(
