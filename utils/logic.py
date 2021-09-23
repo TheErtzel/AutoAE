@@ -5,7 +5,6 @@ import time
 import glob
 import threading
 import pyautogui
-import traceback
 from collections import Counter
 from typing import Any, Union, List, Tuple, Dict
 
@@ -310,12 +309,12 @@ def use_healing_potion() -> None:
 def use_magical_weapon(bot: Bot) -> None:
     rune_slots = memory.get_rune_slots()
 
-    if memory.get_hotbar() != 8:
-        bot.log('[Logic] Switching to hotbar #8')
-        memory.set_hotbar(8)
-
     # Equip a magical weapon
     if rune_slots == 0:
+        if memory.get_hotbar() != 8:
+            bot.log('[Logic] Switching to hotbar #8')
+            memory.set_hotbar(8)
+
         bot.log('[Logic] Switching to magical weapon')
         pyautogui.keyDown('shift')
         time.sleep(0.250)
@@ -328,12 +327,12 @@ def use_magical_weapon(bot: Bot) -> None:
 def use_rune(bot: Bot, rune_type: int) -> None:
     rune_types = memory.get_rune_types()
 
-    if memory.get_hotbar() != 9:
-        bot.log('[Logic] Switching to hotbar #9')
-        memory.set_hotbar(9)
-
-    # If we aren't using a mind Rune, switch to one
+    # If we aren't using the correct rune, switch to it
     if len(rune_types) > 0 and rune_types[0] != rune_type:
+        if memory.get_hotbar() != 9:
+            bot.log('[Logic] Switching to hotbar #9')
+            memory.set_hotbar(9)
+
         if rune_type == consts.Rune.BODY:
             bot.log('[Logic] Switching Rune slot 0 to Body')
             pyautogui.press('f4')
@@ -370,7 +369,19 @@ def use_none_magical_weapon(bot: Bot) -> None:
 
 
 def select_spell(spell: int, shift: bool = False) -> None:
-    if memory.get_spell() == spell:
+    if memory.get_spell_state() == 1 and memory.get_spell() == spell:
+        return
+
+    if memory.get_spell_state() == 0:
+        old_hotbar = memory.get_hotbar()
+        memory.set_hotbar(8)
+        pyautogui.press('f2')
+        time.sleep(0.250)
+        memory.set_hotbar(old_hotbar)
+        if memory.get_spell() == spell:
+            return
+
+    if memory.set_spell(spell):
         return
 
     if shift:
@@ -438,11 +449,11 @@ def prepare_to_buff(bot: Bot) -> None:
 
 
 def prepare_to_attack(bot: Bot) -> None:
-    if memory.get_hotbar() != 8:
-        bot.log('[Logic] Switching to hotbar #8')
-        memory.set_hotbar(8)
-
     if memory.get_spell() != 0:
+        if memory.get_hotbar() != 8:
+            bot.log('[Logic] Switching to hotbar #8')
+            memory.set_hotbar(8)
+
         pyautogui.press('f2')
     # use_none_magical_weapon(bot)
 
@@ -750,8 +761,7 @@ def heal_selected_entity(bot: Bot) -> None:
         f'[Logic] heal_selected_entity selecting spell')
 
     while memory.get_spell() != consts.Spell.SUPERIOR_HEAL and bot.state == 2:
-        pyautogui.press('f2')
-        time.sleep(0.250)
+        select_spell(consts.Spell.SUPERIOR_HEAL)
 
     if bot.state != 2:
         return
@@ -885,31 +895,28 @@ def get_entities_on_screen(bot: Bot) -> None:
     follower_ids = memory.get_followers_id()
     entities = []
     for offset in sorted(consts.SCREEN_ENTITY_OFFSETS):
-        try:
+        if bot.state < 2:
+            break
+        for i in range(1):
             if bot.state < 2:
                 break
-            for i in range(1):
-                if bot.state < 2:
-                    break
 
-                hexCode = hex(offset + (i * 4))
-                entity = memory.get_entity_data(hexCode)
-                if entity == None:
-                    break
-                _id = entity['id']
-                if _id == 0 or entity['name'] == '' or (entity['tag'] == '' and not _id in follower_ids) or is_known_pet(entity['name']) or _id in non_player_ids or _id in ignored_ids:
-                    break
+            hexCode = hex(offset + (i * 4))
+            entity = memory.get_entity_data(hexCode)
+            if entity == None:
+                continue
+            _id = entity['id']
+            if _id == 0 or entity['name'] == '' or _id in non_player_ids or _id in ignored_ids or (not _id in follower_ids and (entity['tag'] == '' or is_known_pet(entity['name']))):
+                continue
 
-                distance = get_distance_apart(
-                    selfLoc, entity['coords'])
-                if distance[0] <= 14 and distance[0] >= -13 and distance[1] <= 12 and distance[1] >= -12:
-                    entity['distance'] = distance
-                    entity['percentage'] = get_missing_health_percentage(
-                        entity['hp'][0], entity['hp'][1])
-                    entities.append(entity)
-        except Exception as err:
-            bot.log(f'[Logic] {traceback.format_exc()}')
-            continue
+            distance = get_distance_apart(
+                selfLoc, entity['coords'])
+            if distance[0] <= 14 and distance[0] >= -13 and distance[1] <= 12 and distance[1] >= -12:
+                entity['distance'] = distance
+                entity['is_follower'] = (_id in follower_ids)
+                entity['percentage'] = get_missing_health_percentage(
+                    entity['hp'][0], entity['hp'][1])
+                entities.append(entity)
 
     bot.entities_on_screen = sort_by(filter(entities, 'id'), 'percentage')
     if len(bot.entities_on_screen) > 0:

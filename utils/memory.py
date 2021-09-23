@@ -7,7 +7,7 @@ _base_self = 0x00353100  # 9/20
 _base_entity = 0x003522D4  # 9/20
 _base_follower = 0x00352F54  # 9/20
 _base_gui = 0x003B3AB8  # 9/20
-_base_hotbar = 0x00352158  # 9/20
+_base_hotbar = 0x00353158  # 9/22
 _base_rune_type = 0x003B3B44  # 9/20
 _base_rune_charge = 0x003B3B48  # 9/20
 _base_spell = 0x003B3B48  # 9/20
@@ -51,8 +51,8 @@ class GameProcess():
     def __init__(self):
         try:
             self.rmw = ReadWriteMemory()
-            self.process = self.rmw.get_process_by_name("client.exe")
-            #self.process = self.rmw.get_process_by_id(32288)
+            #self.process = self.rmw.get_process_by_name("client.exe")
+            self.process = self.rmw.get_process_by_id(55860)
         except:
             self.rmw = None
             self.process = None
@@ -128,6 +128,34 @@ def set_spell_type(number: int) -> bool:
                 _base + _base_spell_type, offsets=[_spell_type_offset])
             result = process.write(point, number)
     return result
+
+
+def set_rune_types(rune_types: List[int]) -> List[bool]:
+    result_list: List[bool] = []
+    typeOffset = _rune_type_offset
+    with GameProcess() as process:
+        if process != None:
+            for i in range(len(rune_types)):
+                point = process.get_pointer(
+                    _base + _base_spell, offsets=[typeOffset])
+                result = process.write(point, rune_types[i])
+                result_list.append(result)
+                typeOffset = typeOffset + 4
+    return result_list
+
+
+def set_rune_charges(rune_charges: List[int]) -> List[bool]:
+    result_list: List[bool] = []
+    charge_offset = _rune_charge_offset
+    with GameProcess() as process:
+        if process != None:
+            for i in range(len(rune_charges)):
+                point = process.get_pointer(
+                    _base + _base_spell, offsets=[charge_offset])
+                result = process.write(point, rune_charges[i])
+                result_list.append(result)
+                charge_offset = charge_offset + 4
+    return result_list
 
 
 def get_program_width() -> int:
@@ -299,7 +327,7 @@ def get_game_window() -> Tuple:
 
 
 def get_hotbar() -> int:
-    result: int = 57
+    result: int = -1
     with GameProcess() as process:
         if process != None:
             point = process.get_pointer(
@@ -362,7 +390,7 @@ def get_spell_type() -> int:
 
 
 def get_rune_types() -> List[int]:
-    Runelist: List[int] = []
+    rune_list: List[int] = []
     typeOffset = _rune_type_offset
     with GameProcess() as process:
         if process != None:
@@ -370,23 +398,23 @@ def get_rune_types() -> List[int]:
                 point = process.get_pointer(
                     _base + _base_spell, offsets=[typeOffset])
                 result = process.read(point)
-                Runelist.append(result)
+                rune_list.append(result)
                 typeOffset = typeOffset + 4
-    return Runelist
+    return rune_list
 
 
 def get_rune_charges() -> List[int]:
-    chargelist: List[int] = []
-    chargeOffset = _rune_charge_offset
+    charge_list: List[int] = []
+    charge_offset = _rune_charge_offset
     with GameProcess() as process:
         if process != None:
             for _ in range(9):
                 point = process.get_pointer(
-                    _base + _base_spell, offsets=[chargeOffset])
+                    _base + _base_spell, offsets=[charge_offset])
                 result = process.read(point)
-                chargelist.append(result)
-                chargeOffset = chargeOffset + 4
-    return chargelist
+                charge_list.append(result)
+                charge_offset = charge_offset + 4
+    return charge_list
 
 
 def get_rune_slots() -> int:
@@ -668,28 +696,30 @@ def get_entity_data(offset: bytes) -> Dict[str, Union[int, str, Tuple]]:
             pointerName = process.get_pointer(
                 _base + _base_entity, offsets=[0x210, offset, 0xC, 0x44, 0x10C])
             resultName = process.readString(pointerName, 20)
-            if resultName != None and len(resultName) > 0:
-                pointerId = process.get_pointer(
-                    _base + _base_entity, offsets=[0x210, offset, 0xC, 0x44, 0x4])
-                resultId = process.read(pointerId)
-                pointerGuildTag = process.get_pointer(
-                    _base + _base_entity, offsets=[0x210, offset, 0xC, 0x44, 0x13C])
-                resultGuildTag = process.readString(pointerGuildTag, 20)
-                pointerX = process.get_pointer(
-                    _base + _base_entity, offsets=[0x210, offset, 0xC, 0x44, 0xC])
-                resultX = process.read(pointerX)
-                pointerY = process.get_pointer(
-                    _base + _base_entity, offsets=[0x210, offset, 0xC, 0x44, 0x10])
-                resultY = process.read(pointerY)
-                pointerHP = process.get_pointer(
-                    _base + _base_entity, offsets=[0x210, offset, 0xC, 0x44, 0x18])
-                resultHP = process.read(pointerHP)
-                pointerMaxHP = process.get_pointer(
-                    _base + _base_entity, offsets=[0x210, offset, 0xC, 0x44, 0x1C])
-                resultMaxHP = process.read(pointerMaxHP)
-                if resultId > 0:
-                    result = {'id': resultId, 'name': resultName, 'tag': resultGuildTag, 'coords': (
-                        resultX, resultY), 'hp': (resultHP, resultMaxHP)}
+            if resultName == None or len(resultName) == 0:
+                return result
+
+            pointerId = process.get_pointer(
+                _base + _base_entity, offsets=[0x210, offset, 0xC, 0x44, 0x4])
+            resultId = process.read(pointerId)
+            pointerGuildTag = process.get_pointer(
+                _base + _base_entity, offsets=[0x210, offset, 0xC, 0x44, 0x13C])
+            resultGuildTag = process.readString(pointerGuildTag, 20)
+            pointerX = process.get_pointer(
+                _base + _base_entity, offsets=[0x210, offset, 0xC, 0x44, 0xC])
+            resultX = process.read(pointerX)
+            pointerY = process.get_pointer(
+                _base + _base_entity, offsets=[0x210, offset, 0xC, 0x44, 0x10])
+            resultY = process.read(pointerY)
+            pointerHP = process.get_pointer(
+                _base + _base_entity, offsets=[0x210, offset, 0xC, 0x44, 0x18])
+            resultHP = process.read(pointerHP)
+            pointerMaxHP = process.get_pointer(
+                _base + _base_entity, offsets=[0x210, offset, 0xC, 0x44, 0x1C])
+            resultMaxHP = process.read(pointerMaxHP)
+            if resultId > 0:
+                result = {'id': resultId, 'name': resultName, 'tag': resultGuildTag, 'coords': (
+                    resultX, resultY), 'hp': (resultHP, resultMaxHP)}
     return result
 
 

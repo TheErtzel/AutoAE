@@ -35,8 +35,8 @@ class HealerThread(BotThread):
         keyboard.add_hotkey('pause', self.toggle_pause)
         keyboard.add_hotkey('ctrl+n', self.check_mouse_id)
         keyboard.add_hotkey('ctrl+insert', self.entity_data)
-        keyboard.add_hotkey('ctrl+delete', self.buff_mouse_entity)
-        keyboard.add_hotkey('ctrl+end', self.buff_selected_entity)
+        keyboard.add_hotkey('delete', self.buff_mouse_entity)
+        keyboard.add_hotkey('end', self.select_heal)
         keyboard.add_hotkey('ctrl+alt', self.get_selected_entity)
 
         keyboard.add_hotkey('ctrl+-', self.toggle_none)

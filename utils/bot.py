@@ -158,6 +158,21 @@ class BotThread(Bot):
         if memory.get_followers_id()[0] > 0:
             memory.set_followers_state(13)
 
+    def select_heal(self) -> None:
+        rune_types = memory.get_rune_types()
+        rune_charges = memory.get_rune_charges()
+        self.log(f'[{self.name}] rune_types: {rune_types}')
+        self.log(f'[{self.name}] rune_charges: {rune_charges}')
+
+        memory.set_rune_types(
+            [consts.Rune.MIND, consts.Rune.BODY, consts.Rune.SOUL, consts.Rune.NATURE, consts.Rune.MIND, consts.Rune.BODY, consts.Rune.SOUL, consts.Rune.NATURE])
+        memory.set_rune_charges([200, 200, 200, 200, 200, 200, 200, 200])
+
+        rune_types = memory.get_rune_types()
+        rune_charges = memory.get_rune_charges()
+        self.log(f'[{self.name}] rune_types: {rune_types}')
+        self.log(f'[{self.name}] rune_charges: {rune_charges}')
+
     def get_selected_entity(self) -> None:
         self.log(f'[{self.name}] SelectedEntity: {self.selected_entity}')
 
