@@ -212,5 +212,5 @@ class BotThread(Bot):
             self.worker_queue.add('use_class_totem')
         if logic.logs_have_message(chatLogs, 'Your added constitution has faded', 'You feel added constitution'):
             self.worker_queue.add('use_class_totem')
-        if logic.logs_have_message(chatLogs, 'Your attack speed returns to normal', 'Your attack speed has been increased'):
-            self.worker_queue.add('use_werewolf_totem')
+        # if logic.logs_have_message(chatLogs, 'Your attack speed returns to normal', 'Your attack speed has been increased'):
+        #    self.worker_queue.add('use_werewolf_totem')

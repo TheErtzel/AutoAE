@@ -1,18 +1,16 @@
 from ReadWriteMemory import ReadWriteMemory
-from typing import Any, List, Tuple, Dict, Union
+from typing import List, Tuple, Dict, Union
 
 # Hex Codes             hex + 1000
-_base = 0x400000  # 9/20
-_base_self = 0x00353100  # 9/20
-_base_entity = 0x003522D4  # 9/20
-_base_follower = 0x00352F54  # 9/20
-_base_gui = 0x003B3AB8  # 9/20
-_base_hotbar = 0x00353158  # 9/22
-_base_rune_type = 0x003B3B44  # 9/20
-_base_rune_charge = 0x003B3B48  # 9/20
-_base_spell = 0x003B3B48  # 9/20
-_base_spell_type = 0x003B3A68  # 9/20
-_base_game_window = 0x00353104  # 9/20
+_base = 0x400000  # 10/02
+_base_self = 0x00355100  # 10/02
+_base_entity = 0x003542D4  # 10/02
+_base_follower = 0x00354F54  # 10/02
+_base_gui = 0x003B5AB8  # 10/02
+_base_hotbar = 0x00355158  # 10/02
+_base_spell = 0x003B5B48  # 10/02
+_base_spell_type = 0x003B5A68  # 10/02
+_base_game_window = 0x00355104  # 10/02
 
 _z_offset = 0x2F0  # 8/24
 _x_offset = 0x2F4  # 5/11
@@ -20,12 +18,12 @@ _y_offset = 0x2F8  # 5/11
 _screen_width = 0x0048  # 8/12
 _screen_height = 0x0044  # 8/12
 _level_offset = 0x444  # 8/12
-_max_health = 0x29C  # 8/11
-_cur_health = 0x298  # 8/11
-_stamina = 0x4A4  # 8/11
-_stamina_regen = 0x57C  # 9/18
-_armor = 0x2D0  # 8/12
-_weight = 0x2A0  # 8/12
+_max_health = 0x2AC  # 10/04
+_cur_health = 0x2A8  # 10/04
+_stamina = 0x4B4  # 10/04
+_stamina_regen = 0x58C  # 10/04
+_armor = 0x2E0  # 10/04
+_weight = 0x2B0  # 10/04
 _message_offset = 0x003B1B50  # 9/17
 _target_offset = 0x5F4  # 8/12
 _follower_mode_offset = 0x48  # 8/12
@@ -33,7 +31,7 @@ _follower_id_offset = 0x0  # 10/09
 _follower_hp_offset = 0x4C  # 8/12
 _follower_hp_max_offset = 0x50  # 8/12
 _can_move_offset = 0x678  # 8/14
-_party_count_offset = 0x138  # 8/13
+_party_count_offset = 0x144  # 10/04
 _hotbar_offset = 0x4  # 8/12
 _poison_disease_offset = 0x580  # 8/13
 _spell_offset = 0x10808  # 8/13
@@ -51,8 +49,8 @@ class GameProcess():
     def __init__(self):
         try:
             self.rmw = ReadWriteMemory()
-            #self.process = self.rmw.get_process_by_name("client.exe")
-            self.process = self.rmw.get_process_by_id(55860)
+            self.process = self.rmw.get_process_by_name("client.exe")
+            #self.process = self.rmw.get_process_by_id(225)
         except:
             self.rmw = None
             self.process = None
@@ -311,16 +309,16 @@ def get_game_window() -> Tuple:
     with GameProcess() as process:
         if process != None:
             pointLeft = process.get_pointer(
-                _base + _base_game_window, offsets=[0x3C])
+                _base + _base_game_window, offsets=[0x48])
             resultLeft = process.read(pointLeft)
             pointTop = process.get_pointer(
-                _base + _base_game_window, offsets=[0x40])
+                _base + _base_game_window, offsets=[0x4C])
             resultTop = process.read(pointTop)
             pointRight = process.get_pointer(
-                _base + _base_game_window, offsets=[0x44])
+                _base + _base_game_window, offsets=[0x50])
             resultRight = process.read(pointRight)
             pointBottom = process.get_pointer(
-                _base + _base_game_window, offsets=[0x48])
+                _base + _base_game_window, offsets=[0x54])
             resultBottom = process.read(pointBottom)
             result = (resultLeft, resultTop, resultRight, resultBottom)
     return result

@@ -133,19 +133,14 @@ def logs_have_message(chatLogs: List[str] = [], text: str = 'fizzled.', textOppo
     return textFound
 
 
-def channel_logs_have_message(channel: str = 'System', text: str = 'fizzled.', amount: int = 5) -> List[str]:
-    chatLogs = get_last_channel_logs(channel, amount)
-    return [text for chatLog in chatLogs if text in chatLog]
-
-
-def combat_logs_have_message(text: str = 'fizzled.') -> List[str]:
-    chatLogs = get_last_channel_logs('Combat/Magic', 3)
-    return [text for chatLog in chatLogs if text in chatLog]
-
-
 def get_spell_result() -> int:
-    chatLogs = get_last_channel_logs('Combat/Magic', 1)
-    checkline = str(chatLogs[0])
+    level = memory.get_level()
+    logLines = 1 if level == 100 else 2
+    chatLogs = get_last_channel_logs('Combat/Magic', logLines)
+    if len(chatLogs) < logLines:
+        return 0
+
+    checkline = str(chatLogs[logLines - 1])
     if 'You have cast' in checkline:
         return 1
     elif 'already has' in checkline or 'does not need' in checkline:
@@ -163,8 +158,13 @@ def get_spell_result() -> int:
 
 
 def get_attack_result() -> int:
-    chatLogs = get_last_channel_logs('Combat/Magic', 1)
-    checkline = str(chatLogs[0])
+    level = memory.get_level()
+    logLines = 1 if level == 100 else 2
+    chatLogs = get_last_channel_logs('Combat/Magic', logLines)
+    if len(chatLogs) < logLines:
+        return 0
+
+    checkline = str(chatLogs[logLines - 1])
     if 'You hit' in checkline:
         return 1
     elif 'is out of range' in checkline:
@@ -372,18 +372,6 @@ def select_spell(spell: int, shift: bool = False) -> None:
     if memory.get_spell_state() == 1 and memory.get_spell() == spell:
         return
 
-    if memory.get_spell_state() == 0:
-        old_hotbar = memory.get_hotbar()
-        memory.set_hotbar(8)
-        pyautogui.press('f2')
-        time.sleep(0.250)
-        memory.set_hotbar(old_hotbar)
-        if memory.get_spell() == spell:
-            return
-
-    if memory.set_spell(spell):
-        return
-
     if shift:
         pyautogui.keyDown('shift')
         time.sleep(0.250)
@@ -464,58 +452,72 @@ def use_spell(bot: Bot, spell_data: Tuple[int, int, bool] = (-1, 0, False), coor
         memory.set_hotbar(spell_data[1])
     if memory.get_spell() != spell_data[0]:
         select_spell(spell_data[0], spell_data[2])
+    if memory.get_target_id() == 0:
+        return 0
 
     if coords[0] != 0 or coords[1] != 0:
-        controller.move_mouse(coords[0] + offsets[0], coords[1] + [1], False)
+        controller.move_mouse(
+            coords[0] + offsets[0], coords[1] + offsets[1], False)
     controller.left_mouse_click()
-    spellResult = get_spell_result()
-    if spellResult == 3:  # fizzled
+    spell_result = get_spell_result()
+    if spell_result == 3 and bot.fizzle_count < 2:  # fizzled
+        bot.fizzle_count += 1
+        bot.log('[Logic] Spell fizzled! Recasting...')
         return use_spell(bot, spell_data, coords, offsets)
-    elif spellResult != 2:
+    elif spell_result != 2:
+        bot.fizzle_count = 0
         time.sleep(3.0)
         check_runes(bot)
-        return spellResult
-    return spellResult
+        return spell_result
+    return spell_result
 
 
 def use_healing_spell(bot: Bot) -> int:
     prepare_to_heal(bot)
     select_spell(consts.Spell.SUPERIOR_HEAL)
+    if memory.get_target_id() == 0:
+        return 0
 
     bot.log('[Logic] Casting heal on self')
     click_self()
-    spellResult = get_spell_result()
-    if spellResult == 3:
+    spell_result = get_spell_result()
+    if spell_result == 3 and bot.fizzle_count < 2:  # fizzled
+        bot.fizzle_count += 1
         bot.log('[Logic] Superior Heal fizzled! Recasting...')
         return use_healing_spell(bot)
-    elif spellResult != 2:
+    elif spell_result != 2:
+        bot.fizzle_count = 0
         time.sleep(consts.SpellTimer.SUPERIOR_HEAL)
         check_runes(bot)
-        return spellResult
+        return spell_result
     else:
-        return spellResult
+        return spell_result
 
 
 def use_call_of_the_gods_spell(bot: Bot) -> int:
     prepare_to_heal(bot)
     select_spell(consts.Spell.CALL_OF_THE_GODS)
+    if memory.get_target_id() == 0:
+        return 0
 
     bot.log('[Logic] Casting Call of the Gods on bot')
     click_self()
-    spellResult = get_spell_result()
-    if spellResult == 3:
+    spell_result = get_spell_result()
+    if spell_result == 3 and bot.fizzle_count < 2:  # fizzled
+        bot.fizzle_count += 1
         bot.log('[Logic] Call of the Gods fizzled! Recasting...')
-        click_self()
-    elif spellResult == 5:
+        return use_call_of_the_gods_spell(bot)
+    elif spell_result == 5:
         bot.log(
             '[Logic] Call of the Gods on cooldown! Switching to Superior Heal')
-        return use_call_of_the_gods_spell(bot)
-    elif spellResult != 2:
+        return use_healing_spell(bot)
+    elif spell_result != 2:
+        bot.fizzle_count = 0
         time.sleep(consts.SpellTimer.CALL_OF_THE_GODS)
         check_runes(bot)
-        return spellResult
+        return spell_result
     else:
-        return spellResult
+        return spell_result
 
 
 def use_stamina_potion() -> None:
@@ -585,6 +587,12 @@ def un_ignore_entity(bot: Bot, entity: Dict[str, Union[int, str, Tuple]]) -> Non
 def ignore_entity(bot: Bot, entity: Dict[str, Union[int, str, Tuple]]) -> None:
     def removeIgnored():
         un_ignore_entity(bot, entity)
+
+    # Don't ignore a player we have on assist
+    partyAssistId = memory.get_party_assist_id()
+    if partyAssistId > 0:
+        if entity['id'] == partyAssistId:
+            return
 
     bot.log(f'[Logic] Added {entity["name"]} to temporary ignore list')
     bot.ignored_ids.append(entity['id'])
@@ -777,19 +785,19 @@ def heal_selected_entity(bot: Bot) -> None:
         bot.selected_entity = None
         return
 
-    spellResult = get_spell_result()
+    spell_result = get_spell_result()
 
-    if spellResult == -1:
+    if spell_result == -1:
         bot.non_player_ids.append(entity['id'])
-    elif spellResult == 3:
+    elif spell_result == 3:
         bot.log('[Logic] Superior heal fizzled!')
         bot.worker_queue.add(name='heal_selected_entity', addToStart=True)
         return
-    elif spellResult == 4 or spellResult == 5:
+    elif spell_result == 4 or spell_result == 5:
         ignore_entity(bot, entity)
         bot.selected_entity = None
     else:
-        if spellResult != 2:
+        if spell_result != 2:
             time.sleep(consts.SpellTimer.SUPERIOR_HEAL)
             bot.selected_entity = None
             check_runes(bot)
@@ -894,6 +902,7 @@ def get_entities_on_screen(bot: Bot) -> None:
     selfLoc = memory.get_own_location()
     follower_ids = memory.get_followers_id()
     entities = []
+    npcs = []
     for offset in sorted(consts.SCREEN_ENTITY_OFFSETS):
         if bot.state < 2:
             break
@@ -903,20 +912,23 @@ def get_entities_on_screen(bot: Bot) -> None:
 
             hexCode = hex(offset + (i * 4))
             entity = memory.get_entity_data(hexCode)
-            if entity == None:
-                continue
             _id = entity['id']
-            if _id == 0 or entity['name'] == '' or _id in non_player_ids or _id in ignored_ids or (not _id in follower_ids and (entity['tag'] == '' or is_known_pet(entity['name']))):
+            # if _id == 0 or entity['name'] == '' or _id in non_player_ids or _id in ignored_ids or (not _id in follower_ids and (entity['tag'] == '' or is_known_pet(entity['name']))):
+            if _id == 0 or entity['name'] == '' or _id in ignored_ids or (not _id in follower_ids and is_known_pet(entity['name'])):
                 continue
 
             distance = get_distance_apart(
                 selfLoc, entity['coords'])
-            if distance[0] <= 14 and distance[0] >= -13 and distance[1] <= 12 and distance[1] >= -12:
+            # if distance[0] <= 17 and distance[0] >= -13 and distance[1] <= 12 and distance[1] >= -12:
+            if distance[0] <= 10 and distance[0] >= -10 and distance[1] <= 12 and distance[1] >= -12:
                 entity['distance'] = distance
-                entity['is_follower'] = (_id in follower_ids)
                 entity['percentage'] = get_missing_health_percentage(
                     entity['hp'][0], entity['hp'][1])
-                entities.append(entity)
+
+                if _id in non_player_ids or (not _id in follower_ids and entity['tag'] == ''):
+                    npcs.append(entity)
+                else:
+                    entities.append(entity)
 
     bot.entities_on_screen = sort_by(filter(entities, 'id'), 'percentage')
     if len(bot.entities_on_screen) > 0:

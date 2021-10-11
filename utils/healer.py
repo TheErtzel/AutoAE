@@ -33,6 +33,7 @@ class HealerThread(BotThread):
         self.ignored_ids = []
 
         keyboard.add_hotkey('pause', self.toggle_pause)
+
         keyboard.add_hotkey('ctrl+n', self.check_mouse_id)
         keyboard.add_hotkey('ctrl+insert', self.entity_data)
         keyboard.add_hotkey('delete', self.buff_mouse_entity)
