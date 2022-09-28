@@ -1,16 +1,18 @@
 from ReadWriteMemory import ReadWriteMemory
 from typing import List, Tuple, Dict, Union
 
-# Hex Codes             hex + 1000
-_base = 0x400000  # 10/02
-_base_self = 0x00355100  # 10/02
-_base_entity = 0x003542D4  # 10/02
-_base_follower = 0x00354F54  # 10/02
-_base_gui = 0x003B5AB8  # 10/02
-_base_hotbar = 0x00355158  # 10/02
-_base_spell = 0x003B5B48  # 10/02
-_base_spell_type = 0x003B5A68  # 10/02
-_base_game_window = 0x00355104  # 10/02
+# + 1000
+
+# Hex Codes
+_base = 0x400000  # 10/16
+_base_self = 0x0035A134  # 05/02
+_base_entity = 0x003592F4  # 05/02
+_base_follower = 0x359F88  # 05/02
+_base_gui = 0x003BAAEC  # 05/02
+_base_hotbar = 0x0035A18C  # 05/02
+_base_spell = 0x003B8B3C  # 05/02
+_base_spell_type = 0x003AA9C  # 05/02
+_base_game_window = 0x0035A138  # 05/02
 
 _z_offset = 0x2F0  # 8/24
 _x_offset = 0x2F4  # 5/11
@@ -26,6 +28,25 @@ _armor = 0x2E0  # 10/04
 _weight = 0x2B0  # 10/04
 _message_offset = 0x003B1B50  # 9/17
 _target_offset = 0x5F4  # 8/12
+_entity_base_offset = 0x210  # 10/13/21
+_entity_third_offset = 0xC  # 10/13/21
+_entity_fourth_offset = 0x44  # 10/13/21
+_entity_name_offset = 0x10C  # 10/13/21
+_entity_id_offset = 0x4  # 10/13/21
+_entity_guild_tag_offset = 0x13C  # 10/13/21
+_entity_x_offset = 0xC  # 10/13/21
+_entity_y_offset = 0x10  # 10/13/21
+_entity_hp_offset = 0x18  # 10/13/21
+_entity_max_hp_offset = 0x1C  # 10/13/21
+_party_assist_offset = 0x24  # 10/13/21
+_party_assist_secondary_offset = 0x6A8  # 10/13/21
+_party_member_offset = 0x134  # 10/13/21
+_party_member_id_offset = 0x08  # 10/13/21
+_party_member_name_offset = 0x0C  # 10/13/21
+_party_member_x_offset = 0x44  # 10/13/21
+_party_member_y_offset = 0x48  # 10/13/21
+_party_member_z_offset = 0x4C  # 10/13/21
+_follower_multiplier_offset = 0x58  # 10/13/21
 _follower_mode_offset = 0x48  # 8/12
 _follower_id_offset = 0x0  # 10/09
 _follower_hp_offset = 0x4C  # 8/12
@@ -535,7 +556,7 @@ def get_party_assist_id() -> int:
     with GameProcess() as process:
         if process != None:
             point = process.get_pointer(
-                _base + _base_gui, offsets=[0x24, 0x6A8])
+                _base + _base_gui, offsets=[_party_assist_offset, _party_assist_secondary_offset])
             result = process.read(point)
             if result == 4294967295:
                 result = 0
@@ -552,7 +573,7 @@ def get_party_member_ids() -> List[int]:
                 for __ in range(i):
                     offsets.append(0)
                 pointerId = process.get_pointer(
-                    _base + _base_gui, offsets=[0x134] + offsets + [0x08])
+                    _base + _base_gui, offsets=[_party_member_offset] + offsets + [_party_member_id_offset])
                 resultId = process.read(pointerId)
                 data.append(resultId)
     return data
@@ -568,13 +589,13 @@ def get_party_member_locations() -> List[tuple]:
                 for _ in range(i):
                     offsets.append(0)
                 pointX = process.get_pointer(
-                    _base + _base_gui, offsets=[0x134] + offsets + [0x44])
+                    _base + _base_gui, offsets=[_party_member_offset] + offsets + [_party_member_x_offset])
                 resultX = process.read(pointX)
                 pointY = process.get_pointer(
-                    _base + _base_gui, offsets=[0x134] + offsets + [0x48])
+                    _base + _base_gui, offsets=[_party_member_offset] + offsets + [_party_member_y_offset])
                 resultY = process.read(pointY)
                 pointZ = process.get_pointer(
-                    _base + _base_gui, offsets=[0x134] + offsets + [0x4C])
+                    _base + _base_gui, offsets=[_party_member_offset] + offsets + [_party_member_z_offset])
                 resultZ = process.read(pointZ)
                 locations.append((resultX, resultY, resultZ))
     return locations
@@ -590,7 +611,7 @@ def get_party_member_names() -> List[str]:
                 for _ in range(i):
                     offsets.append(0)
                 pointer = process.get_pointer(
-                    _base + _base_gui, offsets=[0x134] + offsets + [0x000C])
+                    _base + _base_gui, offsets=[_party_member_offset] + offsets + [_party_member_name_offset])
                 result = process.readString(pointer, 20)
                 names.append(result)
     return names
@@ -606,22 +627,22 @@ def get_party_member_data() -> List:
                 for _ in range(i):
                     offsets.append(0)
                 pointerId = process.get_pointer(
-                    _base + _base_gui, offsets=[0x134] + offsets + [0x08])
+                    _base + _base_gui, offsets=[_party_member_offset] + offsets + [_party_member_id_offset])
                 resultId = process.read(pointerId)
                 pointerName = process.get_pointer(
-                    _base + _base_gui, offsets=[0x134] + offsets + [0x0C])
+                    _base + _base_gui, offsets=[_party_member_offset] + offsets + [_party_member_name_offset])
                 resultName = process.readString(pointerName, 20)
                 pointX = process.get_pointer(
-                    _base + _base_gui, offsets=[0x134] + offsets + [0x44])
+                    _base + _base_gui, offsets=[_party_member_offset] + offsets + [_party_member_x_offset])
                 resultX = process.read(pointX)
                 pointY = process.get_pointer(
-                    _base + _base_gui, offsets=[0x134] + offsets + [0x48])
+                    _base + _base_gui, offsets=[_party_member_offset] + offsets + [_party_member_y_offset])
                 resultY = process.read(pointY)
                 pointZ = process.get_pointer(
-                    _base + _base_gui, offsets=[0x134] + offsets + [0x4C])
+                    _base + _base_gui, offsets=[_party_member_offset] + offsets + [_party_member_z_offset])
                 resultZ = process.read(pointZ)
                 data.append(
-                    {'index': x, 'id': resultId, 'name': resultName, 'coords': (resultX, resultY, resultZ)})
+                    {'index': i, 'id': resultId, 'name': resultName, 'coords': (resultX, resultY, resultZ)})
     return data
 
 
@@ -633,13 +654,13 @@ def get_party_members_location(index: int) -> Tuple:
     with GameProcess() as process:
         if process != None:
             pointX = process.get_pointer(
-                _base + _base_gui, offsets=[0x134] + offsets + [0x44])
+                _base + _base_gui, offsets=[_party_member_offset] + offsets + [_party_member_x_offset])
             resultX = process.read(pointX)
             pointY = process.get_pointer(
-                _base + _base_gui, offsets=[0x134] + offsets + [0x48])
+                _base + _base_gui, offsets=[_party_member_offset] + offsets + [_party_member_y_offset])
             resultY = process.read(pointY)
             pointZ = process.get_pointer(
-                _base + _base_gui, offsets=[0x134] + offsets + [0x4C])
+                _base + _base_gui, offsets=[_party_member_offset] + offsets + [_party_member_z_offset])
             resultZ = process.read(pointZ)
             result = (resultX, resultY, resultZ)
     return result
@@ -653,7 +674,7 @@ def get_party_members_name(index: int) -> str:
     with GameProcess() as process:
         if process != None:
             pointer = process.get_pointer(
-                _base + _base_gui, offsets=[0x134] + offsets + [0x000C])
+                _base + _base_gui, offsets=[_party_member_offset] + offsets + [_party_member_name_offset])
             result = process.readString(pointer, 20)
     return result
 
@@ -667,19 +688,19 @@ def get_party_members_data(index: int) -> Dict[str, Union[int, str, Tuple]]:
     with GameProcess() as process:
         if process != None:
             pointerId = process.get_pointer(
-                _base + _base_gui, offsets=[0x134] + offsets + [0x08])
+                _base + _base_gui, offsets=[_party_member_offset] + offsets + [_party_member_id_offset])
             resultId = process.read(pointerId)
             pointerName = process.get_pointer(
-                _base + _base_gui, offsets=[0x134] + offsets + [0x000C])
+                _base + _base_gui, offsets=[_party_member_offset] + offsets + [_party_member_name_offset])
             resultName = process.readString(pointerName, 20)
             pointX = process.get_pointer(
-                _base + _base_gui, offsets=[0x134] + offsets + [0x44])
+                _base + _base_gui, offsets=[_party_member_offset] + offsets + [_party_member_x_offset])
             resultX = process.read(pointX)
             pointY = process.get_pointer(
-                _base + _base_gui, offsets=[0x134] + offsets + [0x48])
+                _base + _base_gui, offsets=[_party_member_offset] + offsets + [_party_member_y_offset])
             resultY = process.read(pointY)
             pointZ = process.get_pointer(
-                _base + _base_gui, offsets=[0x134] + offsets + [0x4C])
+                _base + _base_gui, offsets=[_party_member_offset] + offsets + [_party_member_z_offset])
             resultZ = process.read(pointZ)
             result = {'index': index, 'id': resultId, 'name': resultName,
                       'coords': (resultX, resultY, resultZ)}
@@ -692,28 +713,28 @@ def get_entity_data(offset: bytes) -> Dict[str, Union[int, str, Tuple]]:
     with GameProcess() as process:
         if process != None:
             pointerName = process.get_pointer(
-                _base + _base_entity, offsets=[0x210, offset, 0xC, 0x44, 0x10C])
+                _base + _base_entity, offsets=[_entity_base_offset, offset, _entity_third_offset, _entity_fourth_offset, _entity_name_offset])
             resultName = process.readString(pointerName, 20)
             if resultName == None or len(resultName) == 0:
                 return result
 
             pointerId = process.get_pointer(
-                _base + _base_entity, offsets=[0x210, offset, 0xC, 0x44, 0x4])
+                _base + _base_entity, offsets=[_entity_base_offset, offset, _entity_third_offset, _entity_fourth_offset, _entity_id_offset])
             resultId = process.read(pointerId)
             pointerGuildTag = process.get_pointer(
-                _base + _base_entity, offsets=[0x210, offset, 0xC, 0x44, 0x13C])
+                _base + _base_entity, offsets=[_entity_base_offset, offset, _entity_third_offset, _entity_fourth_offset, _entity_guild_tag_offset])
             resultGuildTag = process.readString(pointerGuildTag, 20)
             pointerX = process.get_pointer(
-                _base + _base_entity, offsets=[0x210, offset, 0xC, 0x44, 0xC])
+                _base + _base_entity, offsets=[_entity_base_offset, offset, _entity_third_offset, _entity_fourth_offset, _entity_x_offset])
             resultX = process.read(pointerX)
             pointerY = process.get_pointer(
-                _base + _base_entity, offsets=[0x210, offset, 0xC, 0x44, 0x10])
+                _base + _base_entity, offsets=[_entity_base_offset, offset, _entity_third_offset, _entity_fourth_offset, _entity_y_offset])
             resultY = process.read(pointerY)
             pointerHP = process.get_pointer(
-                _base + _base_entity, offsets=[0x210, offset, 0xC, 0x44, 0x18])
+                _base + _base_entity, offsets=[_entity_base_offset, offset, _entity_third_offset, _entity_fourth_offset, _entity_hp_offset])
             resultHP = process.read(pointerHP)
             pointerMaxHP = process.get_pointer(
-                _base + _base_entity, offsets=[0x210, offset, 0xC, 0x44, 0x1C])
+                _base + _base_entity, offsets=[_entity_base_offset, offset, _entity_third_offset, _entity_fourth_offset, _entity_max_hp_offset])
             resultMaxHP = process.read(pointerMaxHP)
             if resultId > 0:
                 result = {'id': resultId, 'name': resultName, 'tag': resultGuildTag, 'coords': (
@@ -738,7 +759,7 @@ def get_followers_id() -> List[int]:
     with GameProcess() as process:
         if process != None:
             offset = _follower_id_offset
-            for i in range(2):
+            for i in range(3):
                 offset = offset + (i * 0x58)
                 point = process.get_pointer(
                     _base + _base_follower, offsets=[offset])
@@ -755,7 +776,7 @@ def get_followers_state() -> List[int]:
     with GameProcess() as process:
         if process != None:
             offset = _follower_mode_offset
-            for i in range(2):
+            for i in range(3):
                 offset = offset + (i * 0x58)
                 point = process.get_pointer(
                     _base + _base_follower, offsets=[offset])
@@ -769,7 +790,7 @@ def set_followers_state(state: int = 0) -> List[bool]:
     with GameProcess() as process:
         if process != None:
             offset = _follower_mode_offset
-            for i in range(2):
+            for i in range(3):
                 offset = offset + (i * 0x58)
                 point = process.get_pointer(
                     _base + _base_follower, offsets=[offset])
@@ -782,7 +803,8 @@ def set_follower_state(index: int = 0, state: int = 0) -> bool:
     result: bool = False
     with GameProcess() as process:
         if process != None:
-            offset = _follower_mode_offset + (index * 0x58)
+            offset = _follower_mode_offset + \
+                (index * _follower_multiplier_offset)
             point = process.get_pointer(
                 _base + _base_follower, offsets=[offset])
             result = process.write(point, state)
@@ -794,8 +816,8 @@ def get_followers_health() -> List[int]:
     with GameProcess() as process:
         if process != None:
             offset = _follower_hp_offset
-            for i in range(2):
-                offset = offset + (i * 0x58)
+            for i in range(3):
+                offset = offset + (i * _follower_multiplier_offset)
                 point = process.get_pointer(
                     _base + _base_follower, offsets=[offset])
                 result[i] = process.read(point)
@@ -807,8 +829,8 @@ def get_followers_health_max() -> List[int]:
     with GameProcess() as process:
         if process != None:
             offset = _follower_hp_max_offset
-            for i in range(2):
-                offset = offset + (i * 0x58)
+            for i in range(3):
+                offset = offset + (i * _follower_multiplier_offset)
                 point = process.get_pointer(
                     _base + _base_follower, offsets=[offset])
                 result[i] = process.read(point)
